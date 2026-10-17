@@ -4,6 +4,7 @@ import { ExternalLink, Headphones, Heart, Loader2, Music, Pause, Play, Search, S
 import Stars from './Stars.js';
 import { useIdentity } from './useIdentity.js';
 import { playlistService, type PlaylistSong } from '../../services/playlist.service.js';
+import { safeHttpUrl } from '../../utils/safeUrl.js';
 
 interface Suggestion {
   id: number;
@@ -37,7 +38,8 @@ const ListenModal: React.FC<{ song: PlaylistSong; onClose: () => void }> = ({ so
   const apple = {
     name: 'Apple Music',
     hint: 'Opens the song in Apple Music',
-    href: song.link || `https://music.apple.com/search?term=${q}`,
+    // The saved link was written by a partner's browser, so only plain web addresses are ever made clickable
+    href: safeHttpUrl(song.link) || `https://music.apple.com/search?term=${q}`,
     color: '#FA243C',
   };
   const options = platform === 'android' ? [spotify] : platform === 'ios' ? [apple, spotify] : [spotify, apple];

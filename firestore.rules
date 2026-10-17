@@ -14,6 +14,20 @@ service cloud.firestore {
       return signedIn() && coupleId != null && myCoupleId() == coupleId;
     }
 
+    // A link or picture field, when present, must be a normal web address or an inline image.
+    // This keeps values like "javascript:..." out of the database, even from a modified client.
+    function okUrl(data, field) {
+      return !(field in data) || (
+        data[field] is string &&
+        (data[field].matches('^https?://.*') || data[field].matches('^data:image/.*'))
+      );
+    }
+
+    // Whoever wrote an item stays its author
+    function keepsAuthor() {
+      return request.resource.data.authorId == resource.data.authorId;
+    }
+
     // Created and edited by the backend (Admin SDK) only; a user can read their own profile.
     match /users/{uid} {
       allow read: if signedIn() && request.auth.uid == uid;
@@ -33,38 +47,53 @@ service cloud.firestore {
       allow create: if inCouple(request.resource.data.coupleId)
         && request.resource.data.authorId == request.auth.uid;
       allow update: if inCouple(resource.data.coupleId)
-        && request.resource.data.coupleId == resource.data.coupleId;
+        && request.resource.data.coupleId == resource.data.coupleId
+        && keepsAuthor();
     }
 
     match /pinboard/{id} {
       allow read, delete: if inCouple(resource.data.coupleId);
       allow create: if inCouple(request.resource.data.coupleId)
-        && request.resource.data.authorId == request.auth.uid;
+        && request.resource.data.authorId == request.auth.uid
+        && okUrl(request.resource.data, 'photoUrl');
       allow update: if inCouple(resource.data.coupleId)
-        && request.resource.data.coupleId == resource.data.coupleId;
+        && request.resource.data.coupleId == resource.data.coupleId
+        && keepsAuthor()
+        && okUrl(request.resource.data, 'photoUrl');
     }
 
     match /gallery/{id} {
       allow read, delete: if inCouple(resource.data.coupleId);
       allow create: if inCouple(request.resource.data.coupleId)
-        && request.resource.data.authorId == request.auth.uid;
+        && request.resource.data.authorId == request.auth.uid
+        && okUrl(request.resource.data, 'photoUrl');
       allow update: if false;
     }
 
     match /playlist/{id} {
       allow read, delete: if inCouple(resource.data.coupleId);
       allow create: if inCouple(request.resource.data.coupleId)
-        && request.resource.data.authorId == request.auth.uid;
+        && request.resource.data.authorId == request.auth.uid
+        && okUrl(request.resource.data, 'link')
+        && okUrl(request.resource.data, 'artwork')
+        && okUrl(request.resource.data, 'previewUrl');
       allow update: if inCouple(resource.data.coupleId)
-        && request.resource.data.coupleId == resource.data.coupleId;
+        && request.resource.data.coupleId == resource.data.coupleId
+        && keepsAuthor()
+        && okUrl(request.resource.data, 'link')
+        && okUrl(request.resource.data, 'artwork')
+        && okUrl(request.resource.data, 'previewUrl');
     }
 
     match /recommendations/{id} {
       allow read, delete: if inCouple(resource.data.coupleId);
       allow create: if inCouple(request.resource.data.coupleId)
-        && request.resource.data.authorId == request.auth.uid;
+        && request.resource.data.authorId == request.auth.uid
+        && okUrl(request.resource.data, 'cover');
       allow update: if inCouple(resource.data.coupleId)
-        && request.resource.data.coupleId == resource.data.coupleId;
+        && request.resource.data.coupleId == resource.data.coupleId
+        && keepsAuthor()
+        && okUrl(request.resource.data, 'cover');
     }
 
     // Everything else is closed.

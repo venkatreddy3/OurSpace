@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { Response, NextFunction } from 'express';
 import { adminAuth, adminDb } from '../config/firebase.js';
 import { AuthenticatedRequest } from '../middlewares/authMiddleware.js';
@@ -26,6 +27,21 @@ const ageFromDob = (dob: unknown): number | null => {
 
 const httpError = (status: number, message: string) => Object.assign(new Error(message), { status });
 
+// Pairing guesses: after a few wrong codes a user is locked out for a while, so codes can't be brute-forced
+const MAX_FAILED_PAIRINGS = 5;
+const PAIRING_LOCK_MS = 15 * 60 * 1000;
+const failedPairings = new Map<string, { count: number; resetAt: number }>();
+const isPairingLocked = (uid: string): boolean => {
+  const entry = failedPairings.get(uid);
+  return !!entry && entry.resetAt > Date.now() && entry.count >= MAX_FAILED_PAIRINGS;
+};
+const recordFailedPairing = (uid: string) => {
+  const now = Date.now();
+  const entry = failedPairings.get(uid);
+  if (!entry || entry.resetAt <= now) failedPairings.set(uid, { count: 1, resetAt: now + PAIRING_LOCK_MS });
+  else entry.count++;
+};
+
 // Helper to generate a unique 6-character uppercase invite code
 const generateInviteCode = async (): Promise<string> => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -35,7 +51,7 @@ const generateInviteCode = async (): Promise<string> => {
   while (!isUnique) {
     code = '';
     for (let i = 0; i < 6; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
+      code += chars.charAt(crypto.randomInt(chars.length)); // cryptographically random, not Math.random
     }
     
     // Check uniqueness in Firestore users collection
@@ -100,9 +116,14 @@ export const googleLogin = async (req: AuthenticatedRequest, res: Response, next
  */
 export const pairPartner = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { inviteCode } = req.body;
-    if (!inviteCode) {
+    const rawCode = req.body?.inviteCode;
+    if (!rawCode) {
       res.status(400).json({ success: false, message: 'Invite code is required.' });
+      return;
+    }
+    const inviteCode = typeof rawCode === 'string' ? rawCode.toUpperCase().trim() : '';
+    if (!/^[A-Z0-9]{6}$/.test(inviteCode)) {
+      res.status(400).json({ success: false, message: 'Invite codes are 6 letters or numbers.' });
       return;
     }
 
@@ -112,6 +133,10 @@ export const pairPartner = async (req: AuthenticatedRequest, res: Response, next
     }
 
     const currentUid = req.user.uid;
+    if (isPairingLocked(currentUid)) {
+      res.status(429).json({ success: false, message: 'Too many wrong codes. Please wait 15 minutes and try again.' });
+      return;
+    }
     const userRef = adminDb.collection('users').doc(currentUid);
     const userDoc = await userRef.get();
 
@@ -133,11 +158,12 @@ export const pairPartner = async (req: AuthenticatedRequest, res: Response, next
     // Search partner by inviteCode
     const partnerSnapshot = await adminDb
       .collection('users')
-      .where('inviteCode', '==', inviteCode.toUpperCase().trim())
+      .where('inviteCode', '==', inviteCode)
       .limit(1)
       .get();
 
     if (partnerSnapshot.empty) {
+      recordFailedPairing(currentUid);
       res.status(404).json({ success: false, message: 'Invalid invite code. Partner not found.' });
       return;
     }
@@ -165,18 +191,25 @@ export const pairPartner = async (req: AuthenticatedRequest, res: Response, next
     const coupleId = `${currentUid}_${partnerUid}`;
     const coupleRef = adminDb.collection('couples').doc(coupleId);
     
-    await coupleRef.set({
-      id: coupleId,
-      partner1Id: currentUid,
-      partner2Id: partnerUid,
-      anniversaryDate: null,
-      status: 'active',
-      createdAt: new Date(),
+    // One transaction: re-check that neither person got paired in the meantime, then link both.
+    // (Two simultaneous requests can no longer pair the same person twice.)
+    await adminDb.runTransaction(async (tx) => {
+      const [me, them] = await Promise.all([tx.get(userRef), tx.get(partnerDoc.ref)]);
+      if (me.data()?.coupleId || them.data()?.coupleId) {
+        throw httpError(409, 'One of you is already paired.');
+      }
+      tx.set(coupleRef, {
+        id: coupleId,
+        partner1Id: currentUid,
+        partner2Id: partnerUid,
+        anniversaryDate: null,
+        status: 'active',
+        createdAt: new Date(),
+      });
+      tx.update(userRef, { coupleId });
+      tx.update(partnerDoc.ref, { coupleId });
     });
-
-    // Update both user profiles
-    await userRef.update({ coupleId });
-    await partnerDoc.ref.update({ coupleId });
+    failedPairings.delete(currentUid);
 
     res.status(200).json({
       success: true,

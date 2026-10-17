@@ -79,7 +79,8 @@ cp server/.env.example server/.env
 | `PORT` | Server port (default `5000`) |
 | `CLIENT_URL` | Allowed browser origin for CORS and Socket.io (default `http://localhost:5173`) |
 | `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` | Service account credentials. Keep the private key on one line, in double quotes, with `\n` between lines |
-| `NODE_ENV` | Set to `production` when deployed |
+| `NODE_ENV` | Set to `production` when deployed. In production `CLIENT_URL` becomes mandatory and error details are hidden |
+| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Optional but recommended: lets the API issue signed upload signatures, so only signed-in users can upload photos |
 
 Never commit `.env` files or the service account JSON. They are listed in `.gitignore`.
 
@@ -133,7 +134,10 @@ With no Firebase config, the app falls back to a local mock mode: data lives in 
 - A partner only ever sees your name, username and photo, never your email, gender or date of birth.
 - The REST API and Socket.io both require a valid Firebase ID token. A development-only token is accepted when `NODE_ENV` is not `production`, and is refused in production.
 - Phone upload sessions need a signed-in owner to create and collect; the phone itself only holds a long random link token. Sessions expire after 15 minutes and are capped by size and count.
-- Cloudinary uploads use an unsigned preset restricted to image formats. Anyone who knows the cloud name and preset could upload to that account, so keep the preset's format and size limits on, or move to signed uploads before opening this up widely.
+- Cloudinary uploads are signed by the API for signed-in users (`/api/media/sign`), limited to image formats and one folder. If the Cloudinary keys aren't set on the server, the app falls back to an unsigned preset; once signing works, delete that preset or set it to "Signed" so the public upload path is closed.
+- The API sends security headers (Helmet), allows one browser origin, throttles requests per IP, locks an account out for 15 minutes after five wrong invite codes, creates invite codes with a cryptographic random generator, and links a couple inside a database transaction so two simultaneous requests can't pair the same person twice.
+- Firestore rules also reject link and picture fields that are not `http(s)` addresses or inline images, and keep an item's author and couple fixed after creation. The pages additionally refuse to render non-web links.
+- See [SECURITY.md](SECURITY.md) to report a vulnerability.
 
 ## Scripts
 
