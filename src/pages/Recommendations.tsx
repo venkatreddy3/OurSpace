@@ -46,7 +46,9 @@ const Recommendations: React.FC = () => {
 
   const { me, otherName, coupleId } = useIdentity();
   const [items, setItems] = useState<RecItem[]>([]);
-  const [view, setView] = useState<'theirs' | 'mine'>('theirs');
+  // null = nobody has chosen yet: open on whichever list has something in it
+  const [viewChoice, setView] = useState<'theirs' | 'mine' | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => recsService.subscribe(coupleId, setItems), [coupleId]);
 
@@ -54,11 +56,14 @@ const Recommendations: React.FC = () => {
   const [form, setForm] = useState(emptyForm);
   const [movieHits, setMovieHits] = useState<MovieHit[]>([]);
   const [searching, setSearching] = useState(false);
+  // What the last search ended with: nothing to say, no matches, or the service couldn't be reached
+  const [searchStatus, setSearchStatus] = useState<'idle' | 'empty' | 'failed'>('idle');
 
   useEffect(() => {
     setShowForm(false);
     setForm(emptyForm);
-    setView('theirs');
+    setView(null);
+    setSaveError(null);
   }, [activeTab]);
 
   // Suggest matches with a photo as you type - shows via TVMaze, places and bookmarks via Wikipedia (both free, no key)
@@ -68,18 +73,22 @@ const Recommendations: React.FC = () => {
     if (!active || q.length < 2 || (activeTab !== 'watchlist' && form.cover)) {
       setMovieHits([]);
       setSearching(false);
+      setSearchStatus('idle');
       return;
     }
     const ctrl = new AbortController();
     setSearching(true);
+    setSearchStatus('idle');
     const t = setTimeout(async () => {
       try {
         if (activeTab === 'watchlist') {
-          // Movies & series with posters (IMDb suggestion feed: free, no key)
+          // Movies & series with posters (IMDb's titles-only suggestion feed: free, no key).
+          // The general feed puts people first, so a name like "john" would return no titles at all.
           const res = await fetch(
-            `https://v3.sg.media-imdb.com/suggestion/x/${encodeURIComponent(q.toLowerCase())}.json`,
+            `https://v3.sg.media-imdb.com/suggestion/titles/x/${encodeURIComponent(q.toLowerCase())}.json`,
             { signal: ctrl.signal }
           );
+          if (!res.ok) throw new Error(`Movie search answered ${res.status}`);
           const kinds: Record<string, string> = {
             movie: 'Movie',
             tvMovie: 'TV movie',
@@ -89,18 +98,18 @@ const Recommendations: React.FC = () => {
             short: 'Short',
           };
           const items = ((await res.json()).d || []) as any[];
-          setMovieHits(
-            items
-              .filter((r) => String(r.id).startsWith('tt') && r.i?.imageUrl && kinds[r.qid])
-              .slice(0, 7)
-              .map((r) => ({
-                id: r.id,
-                title: r.l,
-                meta: `${kinds[r.qid]}${r.y ? ` • ${r.y}` : ''}`,
-                desc: r.s || '',
-                cover: String(r.i.imageUrl).replace(/\._V1_.*\.jpg$/, '._V1_UX400_.jpg'),
-              }))
-          );
+          const hits = items
+            .filter((r) => String(r.id).startsWith('tt') && r.i?.imageUrl && kinds[r.qid])
+            .slice(0, 8)
+            .map((r) => ({
+              id: r.id,
+              title: r.l,
+              meta: `${kinds[r.qid]}${r.y ? ` • ${r.y}` : ''}`,
+              desc: r.s || '',
+              cover: String(r.i.imageUrl).replace(/\._V1_.*\.jpg$/, '._V1_UX400_.jpg'),
+            }));
+          setMovieHits(hits);
+          setSearchStatus(hits.length === 0 ? 'empty' : 'idle');
         } else {
           // Places & bookmarks (Wikipedia search: free, no key)
           const url =
@@ -123,8 +132,12 @@ const Recommendations: React.FC = () => {
               }))
           );
         }
-      } catch {
-        /* aborted or offline */
+      } catch (err) {
+        // A newer keystroke aborts the older request on purpose; anything else means the search itself failed
+        if ((err as Error)?.name !== 'AbortError' && !ctrl.signal.aborted) {
+          setMovieHits([]);
+          setSearchStatus('failed');
+        }
       } finally {
         if (!ctrl.signal.aborted) setSearching(false);
       }
@@ -156,17 +169,27 @@ const Recommendations: React.FC = () => {
   };
 
   const submitRec = async (category: 'watchlist' | 'places', data: { title: string; desc: string; meta: string; cover?: string }) => {
-    await recsService.add({
-      coupleId,
-      authorId: me.uid,
-      authorName: me.name,
-      category,
-      title: data.title,
-      desc: data.desc,
-      meta: data.meta,
-      cover: data.cover,
-    });
-    setView('mine');
+    setSaveError(null);
+    try {
+      await recsService.add({
+        coupleId,
+        authorId: me.uid,
+        authorName: me.name,
+        category,
+        title: data.title,
+        desc: data.desc,
+        meta: data.meta,
+        cover: data.cover,
+      });
+      setView('mine');
+    } catch (err) {
+      console.error('Could not save the recommendation:', err);
+      setSaveError(
+        (err as { code?: string })?.code === 'permission-denied'
+          ? 'That recommendation couldn’t be saved: you don’t have permission. Please sign in again and make sure you are paired.'
+          : 'That recommendation couldn’t be saved. Please check your connection and try again.'
+      );
+    }
   };
 
   const addRec = (e: React.FormEvent) => {
@@ -193,6 +216,7 @@ const Recommendations: React.FC = () => {
   const inTab = items.filter((r) => r.category === activeTab);
   const theirs = inTab.filter((r) => r.authorId !== me.uid);
   const mine = inTab.filter((r) => r.authorId === me.uid);
+  const view = viewChoice ?? (theirs.length === 0 && mine.length > 0 ? 'mine' : 'theirs');
   // Places are one common list; other tabs switch between partner's and mine
   const common = activeTab === 'places';
   const shown = common ? inTab : view === 'theirs' ? theirs : mine;
@@ -213,6 +237,12 @@ const Recommendations: React.FC = () => {
           <p className="text-on-surface-variant mt-1">Share movies, songs and places you both want to check out.</p>
         </div>
       </header>
+
+      {saveError && (
+        <div role="alert" className="bg-red-500/10 border border-red-500/20 text-red-500 rounded-2xl px-4 py-3 text-sm font-medium">
+          {saveError}
+        </div>
+      )}
 
       {/* Tabs + add button */}
       <div className="flex flex-wrap items-center gap-3">
@@ -278,6 +308,13 @@ const Recommendations: React.FC = () => {
               </ul>
             )}
           </div>
+          {!searching && movieHits.length === 0 && searchStatus !== 'idle' && (
+            <p className="mt-3 text-xs text-on-surface-variant" role="status">
+              {searchStatus === 'failed'
+                ? 'Couldn’t reach the movie search. Check your connection and try again.'
+                : `No movies found for “${form.title.trim()}”. Try another spelling.`}
+            </p>
+          )}
         </div>
       )}
 

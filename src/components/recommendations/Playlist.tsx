@@ -326,7 +326,9 @@ const Playlist: React.FC = () => {
   const { me, otherName, coupleId } = useIdentity();
 
   const [songs, setSongs] = useState<PlaylistSong[]>([]);
-  const [tab, setTab] = useState<'theirs' | 'mine'>('theirs');
+  // null = nobody has chosen yet: open on whichever list has something in it
+  const [tabChoice, setTab] = useState<'theirs' | 'mine' | null>(null);
+  const [sendError, setSendError] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [searching, setSearching] = useState(false);
@@ -402,6 +404,7 @@ const Playlist: React.FC = () => {
   const send = async () => {
     if (!draft || sending) return;
     setSending(true);
+    setSendError(null);
     try {
       await playlistService.add({
         coupleId,
@@ -416,6 +419,14 @@ const Playlist: React.FC = () => {
       });
       setDraft(null);
       setMessage('');
+      setTab('mine'); // show the song just added under "From you"
+    } catch (err) {
+      console.error('Could not save the song:', err);
+      setSendError(
+        (err as { code?: string })?.code === 'permission-denied'
+          ? 'That song couldn’t be saved: you don’t have permission. Please sign in again and make sure you are paired.'
+          : 'That song couldn’t be saved. Please check your connection and try again.'
+      );
     } finally {
       setSending(false);
     }
@@ -438,6 +449,7 @@ const Playlist: React.FC = () => {
 
   const mine = songs.filter((s) => s.authorId === me.uid);
   const theirs = songs.filter((s) => s.authorId !== me.uid);
+  const tab = tabChoice ?? (theirs.length === 0 && mine.length > 0 ? 'mine' : 'theirs');
 
   const renderList = (list: PlaylistSong[], isMine: boolean, empty: string) =>
     list.length === 0 ? (
@@ -465,6 +477,12 @@ const Playlist: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-4xl">
+      {sendError && (
+        <div role="alert" className="bg-red-500/10 border border-red-500/20 text-red-500 rounded-2xl px-4 py-3 text-sm font-medium">
+          {sendError}
+        </div>
+      )}
+
       {/* Search + compose */}
       <div className="bg-surface-container border border-primary/10 rounded-2xl p-5 space-y-4">
         {draft ? (
