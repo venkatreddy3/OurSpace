@@ -17,6 +17,7 @@ interface CreateMemoryModalProps {
 }
 
 const MOODS: MoodTag[] = ['Loved', 'Excited', 'Cozy', 'Nostalgic', 'Funny'];
+const MAX_AUDIO_BYTES = 700 * 1024;
 
 // ─── Image Dropzone ───────────────────────────────────────────────────────────
 interface ImageDropzoneProps {
@@ -204,9 +205,11 @@ const CreateMemoryModal: React.FC<CreateMemoryModalProps> = ({
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const resetForm = () => {
+    setError(null);
     setTitle('');
     setDescription('');
     setDate(new Date().toISOString().split('T')[0]);
@@ -243,10 +246,18 @@ const CreateMemoryModal: React.FC<CreateMemoryModalProps> = ({
     async (e: React.FormEvent) => {
       e.preventDefault();
       if (!title.trim() || isSubmitting) return;
-      setIsSubmitting(true);
+      setError(null);
 
       // Mock mode keeps photos as data URLs; real mode uploads them to Cloudinary and stores the URL
       const isMock = isFirebaseMocked || import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true';
+
+      // A voice note is stored inside the memory itself, and one database document can hold about 1 MB
+      if (audioFile && !isMock && audioFile.size > MAX_AUDIO_BYTES) {
+        setError('That voice note is too big. Please pick a short clip (about 700 KB or less), or remove it.');
+        return;
+      }
+
+      setIsSubmitting(true);
       const photoUrls: string[] = [];
       try {
         for (const file of imageFiles) {
@@ -254,13 +265,20 @@ const CreateMemoryModal: React.FC<CreateMemoryModalProps> = ({
         }
       } catch (err) {
         console.error('Photo upload failed:', err);
+        setError(`Your photos couldn't be uploaded: ${(err as Error).message || 'please try again.'}`);
         setIsSubmitting(false);
         return;
       }
 
       let audioUrl: string | undefined;
       if (audioFile) {
-        audioUrl = await readFileAsDataURL(audioFile);
+        try {
+          audioUrl = await readFileAsDataURL(audioFile);
+        } catch {
+          setError('We couldn’t read that voice note. Please try another file.');
+          setIsSubmitting(false);
+          return;
+        }
       }
 
       const dto: CreateMemoryDto = {
@@ -283,6 +301,12 @@ const CreateMemoryModal: React.FC<CreateMemoryModalProps> = ({
         }, 1200);
       } catch (err) {
         console.error('Failed to create memory:', err);
+        const code = (err as { code?: string })?.code;
+        setError(
+          code === 'permission-denied'
+            ? 'You don’t have permission to add a memory right now. Please sign in again and make sure you are paired.'
+            : 'Your memory couldn’t be saved. Please check your connection and try again.'
+        );
         setIsSubmitting(false);
       }
     },
@@ -498,6 +522,15 @@ const CreateMemoryModal: React.FC<CreateMemoryModalProps> = ({
                 className="shrink-0 px-6 py-4 border-t"
                 style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-gray)' }}
               >
+                {error && (
+                  <div
+                    role="alert"
+                    className="mb-3 rounded-xl px-4 py-3 text-xs font-medium text-left"
+                    style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#dc2626' }}
+                  >
+                    {error}
+                  </div>
+                )}
                 <motion.button
                   type="submit"
                   disabled={!title.trim() || isSubmitting}

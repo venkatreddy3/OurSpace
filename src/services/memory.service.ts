@@ -15,6 +15,10 @@ import {
 import { db, isFirebaseMocked } from './firebase.js';
 import type { Memory, CreateMemoryDto, MoodTag } from '../types/memory.js';
 
+/** Firestore rejects fields whose value is `undefined` (e.g. a memory with no voice note), so drop them */
+const withoutUndefined = <T extends object>(data: T): T =>
+  Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as T;
+
 // ─── Local Storage Key ──────────────────────────────────────────────────────
 const MOCK_MEMORIES_KEY = 'ourspace-mock-memories';
 
@@ -140,7 +144,7 @@ export const memoryService = {
     }
 
     const docRef = await addDoc(collection(db, 'memories'), {
-      ...memoryData,
+      ...withoutUndefined(memoryData),
       likes: [],
       createdAt: Timestamp.now(),
     });
@@ -209,7 +213,7 @@ export const memoryService = {
     }
 
     const docRef = doc(db, 'memories', memoryId);
-    await updateDoc(docRef, { ...updates });
+    await updateDoc(docRef, withoutUndefined(updates));
   },
 };
 
