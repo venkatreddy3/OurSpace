@@ -27,6 +27,10 @@ const GREETINGS = [
   'Hey favourite human',
 ];
 
+/** Adds the excitement: "Hey babe" becomes "Hey babe!!!", and a question like "Miss me?" becomes "Miss me???" */
+const emphasise = (greeting: string): string =>
+  /\?$/.test(greeting) ? greeting.replace(/\?+$/, '???') : `${greeting.replace(/[!.,]+$/, '')}!!!`;
+
 const LAST_KEY = 'ourspace-last-greeting';
 
 /** A random greeting that is never the same as the one shown on the previous visit */
@@ -49,7 +53,8 @@ const pickGreeting = (): string => {
 
 /**
  * HomeHero
- * A flirty random hello in a flowing script font, a line about the story so far, over softly drifting hearts.
+ * A flirty random hello in a flowing script font (plain text colour, ending in !!!), a line about the story so far,
+ * over softly drifting hearts.
  */
 const HomeHero: React.FC<HomeHeroProps> = ({ partnerName, days }) => {
   const reduce = useReducedMotion();
@@ -77,18 +82,10 @@ const HomeHero: React.FC<HomeHeroProps> = ({ partnerName, days }) => {
 
       <motion.h1
         {...fade(0.1)}
-        className="relative mt-6 text-6xl sm:text-8xl leading-[1.1] normal-case"
+        className="relative mt-6 text-6xl sm:text-8xl leading-[1.1] normal-case text-on-background"
         style={{ fontFamily: "'Dancing Script', cursive", fontWeight: 600 }}
       >
-        <span className="text-shimmer">{greeting}</span>
-        <motion.span
-          aria-hidden="true"
-          className="inline-block ml-2 text-primary"
-          animate={reduce ? undefined : { scale: [1, 1.18, 1, 1.12, 1] }}
-          transition={reduce ? undefined : { duration: 1.6, repeat: Infinity, repeatDelay: 1.2 }}
-        >
-          ♥
-        </motion.span>
+        {emphasise(greeting)}
       </motion.h1>
 
       <motion.p {...fade(0.25)} className="relative mt-5 text-base sm:text-lg text-on-surface-variant max-w-xl mx-auto">

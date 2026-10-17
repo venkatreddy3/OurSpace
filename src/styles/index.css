@@ -314,19 +314,4 @@ input::placeholder, textarea::placeholder { color: var(--on-surface-variant); op
 
 ::selection { background: var(--primary); color: var(--on-primary); }
 
-/* Home: a soft moving shine across the greeting name */
-@keyframes shimmer-text {
-  to { background-position: 200% center; }
-}
-.text-shimmer {
-  background-image: linear-gradient(90deg, var(--primary), #ffb347, var(--primary));
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: shimmer-text 6s linear infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .text-shimmer { animation: none; }
-}
 
