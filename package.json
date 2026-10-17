@@ -9,6 +9,9 @@
     "url": "git+https://github.com/venkatreddy3/OurSpace.git"
   },
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

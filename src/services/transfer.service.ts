@@ -1,5 +1,6 @@
 /** Phone → desktop photo transfer (talks to /api/transfer on the backend) */
 import { getAuthToken } from './authToken.js';
+import { API_BASE } from '../config.js';
 
 export interface IncomingPhoto {
   name: string;
@@ -8,7 +9,7 @@ export interface IncomingPhoto {
   uploadedAt: string;
 }
 
-const base = '/api/transfer';
+const base = `${API_BASE}/transfer`;
 
 /** Starting a session and collecting photos need a login; the phone's own calls don't. */
 const authHeaders = async (): Promise<Record<string, string>> => ({

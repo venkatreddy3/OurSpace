@@ -1,9 +1,10 @@
 import axios from 'axios';
 import { isFirebaseMocked } from './firebase.js';
+import { API_BASE } from '../config.js';
 
 // Create pre-configured Axios client
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: API_BASE,
   headers: {
     'Content-Type': 'application/json',
   },

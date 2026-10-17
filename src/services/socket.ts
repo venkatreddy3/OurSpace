@@ -1,6 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 import { useSocketStore } from '../store/socketStore';
 import { getAuthToken } from './authToken.js';
+import { API_URL } from '../config.js';
 
 let socketInstance: Socket | null = null;
 
@@ -13,8 +14,9 @@ let socketInstance: Socket | null = null;
 export const initSocket = (): Socket => {
   if (socketInstance) return socketInstance;
 
-  // Uses Vite proxies to connect back to Express Socket.io server
-  socketInstance = io('/', {
+  // The API's own address when deployed (VITE_API_URL); otherwise the same origin, which the Vite dev proxy forwards.
+  // WebSockets can't go through Vercel rewrites, so a deployed site must connect to the API directly.
+  socketInstance = io(API_URL || '/', {
     autoConnect: false,
     reconnection: true,
     reconnectionAttempts: 5,

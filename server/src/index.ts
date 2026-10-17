@@ -13,11 +13,15 @@ import registerPartnerSockets from './sockets/partnerSocket.js';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-// The one browser origin allowed to call this API. Required in production so it can never fall back to a default.
+// The browser origin(s) allowed to call this API: one URL, or several separated by commas
+// (for example the Vercel address plus a custom domain). Required in production so it can never fall back to a default.
 if (isProduction && !process.env.CLIENT_URL) {
   throw new Error('CLIENT_URL must be set in production (the exact URL of the web app, e.g. https://ourspace.example).');
 }
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
+const ALLOWED_ORIGINS = (process.env.CLIENT_URL || 'http://localhost:5173')
+  .split(',')
+  .map((origin) => origin.trim().replace(/\/+$/, '')) // a trailing slash would never match the browser's Origin header
+  .filter(Boolean);
 
 const app = express();
 const server = http.createServer(app);
@@ -29,7 +33,7 @@ if (isProduction) app.set('trust proxy', 1);
 // Mount WebSocket server
 const io = new SocketServer(server, {
   cors: {
-    origin: CLIENT_URL,
+    origin: ALLOWED_ORIGINS,
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -40,7 +44,7 @@ const io = new SocketServer(server, {
 app.use(helmet()); // security headers (no sniffing, no framing, strict referrer policy, HSTS, ...)
 app.use(
   cors({
-    origin: CLIENT_URL,
+    origin: ALLOWED_ORIGINS,
     credentials: true,
   })
 );

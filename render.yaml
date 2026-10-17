@@ -1,0 +1,34 @@
+# Render Blueprint for the OurSpace API (Express + Socket.io).
+# Render > New > Blueprint > pick this repository. Secrets are entered in the dashboard, never committed.
+# The website itself is deployed separately (Vercel); see docs/DEPLOYMENT.md.
+services:
+  - type: web
+    name: ourspace-api
+    runtime: node
+    rootDir: server
+    plan: free
+    # --include=dev: TypeScript is a dev dependency and is needed to build, even though NODE_ENV is production
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # The website's address, e.g. https://ourspace.vercel.app (several allowed, separated by commas)
+      - key: CLIENT_URL
+        sync: false
+      # Firebase Admin credentials from the service account JSON
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      # Signed photo uploads (optional but recommended)
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
