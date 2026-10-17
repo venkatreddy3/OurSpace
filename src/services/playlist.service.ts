@@ -18,6 +18,8 @@ export interface PlaylistSong {
   /** 1–5, given by the partner after listening */
   rating?: number;
   ratedAt?: string;
+  /** Which of the six card looks this song uses (colour and doodles); older songs don't have one */
+  design?: number;
   createdAt: string;
 }
 

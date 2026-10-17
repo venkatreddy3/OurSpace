@@ -5,6 +5,7 @@ import Stars from './Stars.js';
 import { useIdentity } from './useIdentity.js';
 import { playlistService, type PlaylistSong } from '../../services/playlist.service.js';
 import { safeHttpUrl } from '../../utils/safeUrl.js';
+import { pickFreshDesign } from '../pinboard/notePresets';
 
 interface Suggestion {
   id: number;
@@ -104,12 +105,11 @@ const ListenModal: React.FC<{ song: PlaylistSong; onClose: () => void }> = ({ so
 };
 
 // ─── Song card ───────────────────────────────────────────────────────────────
+// Six looks, each a colour plus its own set of doodles. A song's look is its `design` number, so a card never
+// changes when others are added or removed, and neighbours differ.
 const ACCENTS = ['#b5546f', '#6f8f7a', '#6c82a8', '#b0875a', '#8b78a8', '#b36a5a'];
-const accentFor = (id: string): string => {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-  return ACCENTS[h % ACCENTS.length];
-};
+const DESIGN_COUNT = ACCENTS.length;
+const DESIGN_IDS = ACCENTS.map((_, i) => String(i));
 
 const Equalizer: React.FC = () => (
   <div className="flex items-end gap-[3px] h-4">
@@ -176,6 +176,36 @@ const Doodles: React.FC<{ color: string; variant: number }> = ({ color, variant 
       <path {...c} d="M166 108c6-14 18-8 17 4M178 108l5 5 5-6" />
       <path {...c} d="M176 70l2 5 5 1-4 4 1 5-4-3-4 3 1-5-4-4 5-1z" transform="translate(0 -4) scale(.9)" />
     </>,
+    // music: notes, vinyl record, equalizer bars, sparkle
+    <>
+      <path {...c} d="M10 24v-15l11-3v15M10 24a3.6 3.6 0 1 1-3.6-3.6M21 21a3.6 3.6 0 1 1-3.6-3.6" />
+      <circle {...c} cx="176" cy="16" r="10" />
+      <circle {...c} cx="176" cy="16" r="3" />
+      <path {...c} d="M5 104v-9M11 104v-18M17 104v-12M23 104v-22" />
+      {dot(8, 114, 1.4)}
+      <path {...c} d="M174 100v16M166 108h16M168 102l12 12M180 102l-12 12" />
+      {dot(186, 90, 1.3)}
+    </>,
+    // garden: leaf sprig, butterfly, little leaves, bud
+    <>
+      <path {...c} d="M6 26c2-10 8-16 18-18-1 10-7 16-18 18zM6 26l11-11" />
+      <path {...c} d="M168 20c-8-12-2-16 8-6 10-10 16-6 8 6-4 7-12 5-8 0M176 14v12" />
+      <path {...c} d="M8 84c0-8 6-12 14-12 0 8-6 12-14 12zM8 84l9-8" />
+      {dot(10, 100)}
+      {dot(20, 108, 1.3)}
+      <path {...c} d="M176 110c-6 0-6-8 0-12 6 4 6 12 0 12zM176 110v8" />
+      {dot(166, 92, 1.2)}
+    </>,
+    // sweet: diamond, cross-star, zigzag, curl
+    <>
+      <path {...c} d="M14 4l9 11-9 12-9-12z" />
+      <path {...c} d="M176 4v24M164 16h24M168 8l16 16M184 8l-16 16" />
+      <path {...c} d="M4 92l6-9 6 9 6-9 6 9" />
+      <path {...c} d="M4 106l6-9 6 9 6-9 6 9" />
+      <path {...c} d="M166 112c0-9 13-9 13 0s-11 7-9 0" />
+      {dot(186, 100, 1.4)}
+      {dot(172, 84, 1.2)}
+    </>,
   ];
   const bottoms = [
     // little heart pair
@@ -192,8 +222,21 @@ const Doodles: React.FC<{ color: string; variant: number }> = ({ color, variant 
       <path {...c} d="M12 6l2 5 5 .5-4 3.5 1.2 5-4.2-2.7-4.2 2.7 1.2-5-4-3.5 5-.5z" />
       <path {...c} d="M25 20v7M21.5 23.5h7" />
     </>,
+    // tiny note
+    <>
+      <path {...c} d="M12 24v-14l10-3v14M12 24a3.4 3.4 0 1 1-3.4-3.4M22 21a3.4 3.4 0 1 1-3.4-3.4" />
+    </>,
+    // sprout
+    <>
+      <path {...c} d="M16 28V16M16 16c-8 0-10-6-10-10 8 0 10 4 10 10zM16 20c6 0 9-4 10-9-7 0-10 3-10 9z" />
+    </>,
+    // little diamonds
+    <>
+      <path {...c} d="M12 5l7 8-7 9-7-9z" />
+      <path {...c} d="M25 20l3.5 4-3.5 4-3.5-4z" />
+    </>,
   ];
-  const v = variant % 3;
+  const v = variant % DESIGN_COUNT;
   return (
     <>
       <svg aria-hidden viewBox="0 0 190 130" className="pointer-events-none absolute top-1 left-0 w-full" style={{ opacity: 0.85 }}>
@@ -209,6 +252,8 @@ const Doodles: React.FC<{ color: string; variant: number }> = ({ color, variant 
 interface CardProps {
   song: PlaylistSong;
   index: number;
+  /** Which of the six looks to use (colour and doodles) */
+  design: number;
   mine: boolean;
   partnerName: string;
   playing: boolean;
@@ -218,9 +263,9 @@ interface CardProps {
   onDelete: () => void;
 }
 
-const SongCard: React.FC<CardProps> = ({ song, index, mine, partnerName, playing, onPreview, onListen, onRate, onDelete }) => {
-  const accent = accentFor(song.id);
-  const variant = ACCENTS.indexOf(accent) % 3;
+const SongCard: React.FC<CardProps> = ({ song, index, design, mine, partnerName, playing, onPreview, onListen, onRate, onDelete }) => {
+  const accent = ACCENTS[design % DESIGN_COUNT];
+  const variant = design % DESIGN_COUNT;
   return (
     <motion.li
       layout
@@ -343,6 +388,15 @@ const Playlist: React.FC = () => {
 
   useEffect(() => playlistService.subscribe(coupleId, setSongs), [coupleId]);
 
+  // Each song's look: the one saved on it, or (for older songs) its place in the order they were added,
+  // so neighbouring cards never share a colour and doodles
+  const designOf = useMemo(() => {
+    const oldestFirst = [...songs].sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
+    const map = new Map<string, number>();
+    oldestFirst.forEach((s, i) => map.set(s.id, (s.design ?? i) % DESIGN_COUNT));
+    return map;
+  }, [songs]);
+
   // Live song search (iTunes Search API: free, no key) as you type
   useEffect(() => {
     const q = title.trim();
@@ -405,8 +459,14 @@ const Playlist: React.FC = () => {
     if (!draft || sending) return;
     setSending(true);
     setSendError(null);
+    // A new song gets the least-used look, never the same as the song added just before it
+    const newest = [...songs].sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+    const design = Number(
+      pickFreshDesign(DESIGN_IDS, songs.map((s) => String(designOf.get(s.id) ?? 0)), newest ? String(designOf.get(newest.id) ?? 0) : null)
+    );
     try {
       await playlistService.add({
+        design,
         coupleId,
         authorId: me.uid,
         authorName: me.name,
@@ -462,6 +522,7 @@ const Playlist: React.FC = () => {
               key={song.id}
               song={song}
               index={i}
+              design={designOf.get(song.id) ?? 0}
               mine={isMine}
               partnerName={otherName}
               playing={playingId === song.id}
