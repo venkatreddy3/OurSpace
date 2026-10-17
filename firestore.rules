@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function myCoupleId() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.coupleId;
+    }
+
+    function inCouple(coupleId) {
+      return signedIn() && coupleId != null && myCoupleId() == coupleId;
+    }
+
+    // Created and edited by the backend (Admin SDK) only; a user can read their own profile.
+    match /users/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // Created by the backend when partners pair. Members may read it and edit only the anniversary date.
+    match /couples/{coupleId} {
+      allow read: if inCouple(coupleId);
+      allow update: if inCouple(coupleId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['anniversaryDate']);
+      allow create, delete: if false;
+    }
+
+    match /memories/{id} {
+      allow read, delete: if inCouple(resource.data.coupleId);
+      allow create: if inCouple(request.resource.data.coupleId)
+        && request.resource.data.authorId == request.auth.uid;
+      allow update: if inCouple(resource.data.coupleId)
+        && request.resource.data.coupleId == resource.data.coupleId;
+    }
+
+    match /pinboard/{id} {
+      allow read, delete: if inCouple(resource.data.coupleId);
+      allow create: if inCouple(request.resource.data.coupleId)
+        && request.resource.data.authorId == request.auth.uid;
+      allow update: if inCouple(resource.data.coupleId)
+        && request.resource.data.coupleId == resource.data.coupleId;
+    }
+
+    match /gallery/{id} {
+      allow read, delete: if inCouple(resource.data.coupleId);
+      allow create: if inCouple(request.resource.data.coupleId)
+        && request.resource.data.authorId == request.auth.uid;
+      allow update: if false;
+    }
+
+    match /playlist/{id} {
+      allow read, delete: if inCouple(resource.data.coupleId);
+      allow create: if inCouple(request.resource.data.coupleId)
+        && request.resource.data.authorId == request.auth.uid;
+      allow update: if inCouple(resource.data.coupleId)
+        && request.resource.data.coupleId == resource.data.coupleId;
+    }
+
+    match /recommendations/{id} {
+      allow read, delete: if inCouple(resource.data.coupleId);
+      allow create: if inCouple(request.resource.data.coupleId)
+        && request.resource.data.authorId == request.auth.uid;
+      allow update: if inCouple(resource.data.coupleId)
+        && request.resource.data.coupleId == resource.data.coupleId;
+    }
+
+    // Everything else is closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
