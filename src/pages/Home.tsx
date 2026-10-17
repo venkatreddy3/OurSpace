@@ -5,6 +5,14 @@ import { useTheme } from '../context/themeContext';
 import { SleepyCats, Letter, Squiggle } from '../components/ui/Doodles';
 import { useNudgeStore } from '../store/nudgeStore';
 import AnniversaryDialog from '../components/dashboard/AnniversaryDialog';
+import HomeHero from '../components/home/HomeHero';
+import SpaceStats from '../components/home/SpaceStats';
+import MilestoneCard from '../components/home/MilestoneCard';
+import DailyQuestion from '../components/home/DailyQuestion';
+import RecentMoments from '../components/home/RecentMoments';
+import HeartBurst from '../components/home/HeartBurst';
+import Reveal from '../components/home/Reveal';
+import { useSpaceData } from '../hooks/useSpaceData';
 
 const WORLD_IMAGE =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuCfwgfABSMkDW0k9ie0Sm6873rAz8NvOxx2qya4jpS8MWO3pvOlel1wT0iu8YmbFx4ZHQQpkHqDB2tk_SLR1kk8kqLJw1-gO4Zy2tcB5h0ie36Tpny1YkFoAo-7YPNeiQNZnHatA-Ye6LLcvOuxlzJ_2RyH_iM_9Ylg5yC2WCqjCZaXkNZaX9QnUhAARUQ87g8GKtmLx7fJNxHeIgsVBpEDrv40eO-q8f7qlNpgZ6_07GDYNHFLq41W7Q';
@@ -41,11 +49,13 @@ const hotspots = [
  */
 const Home: React.FC = () => {
   const navigate = useNavigate();
-  const { user, couple, logout } = useAuthStore();
+  const { user, partner, couple, logout } = useAuthStore();
   const { theme, setTheme } = useTheme();
   const [profileOpen, setProfileOpen] = useState(false);
   const [dateDialogOpen, setDateDialogOpen] = useState(false);
   const openComposer = useNudgeStore((s) => s.openComposer);
+  const data = useSpaceData(user?.coupleId ?? null);
+  const [burst, setBurst] = useState(0); // bumps each time the day counter is tapped
 
   // Days since anniversary date
   const getDaysTogether = () => {
@@ -180,13 +190,19 @@ const Home: React.FC = () => {
       </header>
 
       <main className="w-full flex-1">
-        {/* Hero */}
-        <section className="max-w-6xl mx-auto px-5 sm:px-8 pt-10 sm:pt-16 pb-12 text-center">
-          <p className="text-sm text-on-surface-variant mb-4 animate-fade-in-up-1">Welcome back, {userName}</p>
-        </section>
+        {/* Hero: greeting, story so far, shortcuts */}
+        <HomeHero
+          name={userName}
+          partnerName={partner?.displayName || null}
+          days={couple?.anniversaryDate ? targetDays : null}
+          onSendNote={() => openComposer()}
+        />
+
+        {/* Live counts of what the two of you have added */}
+        <SpaceStats data={data} />
 
         {/* Our little world (clickable hotspots) */}
-        <section className="max-w-6xl mx-auto px-5 sm:px-8 pb-16 sm:pb-24">
+        <Reveal className="max-w-6xl mx-auto px-5 sm:px-8 pb-16 sm:pb-24">
           <h2 className="font-display text-3xl sm:text-5xl text-center mb-8">Our little world</h2>
           <div className="relative w-full h-[360px] sm:h-[500px] rounded-[28px] sm:rounded-[40px] overflow-hidden border border-border-gray group">
             <div
@@ -210,7 +226,20 @@ const Home: React.FC = () => {
               </div>
             ))}
           </div>
+        </Reveal>
+
+        {/* Something to talk about, and what is coming up */}
+        <section className="max-w-6xl mx-auto px-5 sm:px-8 pb-16 sm:pb-24 grid gap-5 md:grid-cols-2">
+          <Reveal className="h-full">
+            <DailyQuestion onSend={(question) => openComposer(undefined, question)} />
+          </Reveal>
+          <Reveal className="h-full" delay={0.12}>
+            <MilestoneCard anniversaryDate={couple?.anniversaryDate ?? null} onSetDate={() => setDateDialogOpen(true)} />
+          </Reveal>
         </section>
+
+        {/* Latest photos from the gallery */}
+        <RecentMoments photos={data.photos} />
 
         {/* Blue favourites section */}
         <section className="section-ink">
@@ -244,9 +273,18 @@ const Home: React.FC = () => {
             We want every day together to be full of joy.
           </h2>
           <Squiggle className="mx-auto mt-6 w-32 text-primary" />
-          <div className="mt-10 inline-flex flex-col items-center card-edge px-10 py-6">
+          <div className="relative mt-10 inline-flex flex-col items-center card-edge px-10 py-6">
+            <HeartBurst trigger={burst} />
             <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Our journey</span>
-            <span id="days-counter" className="font-display text-7xl sm:text-8xl tabular-nums mt-1">{days}</span>
+            <button
+              type="button"
+              onClick={() => setBurst((b) => b + 1)}
+              className="cursor-pointer transition-transform duration-200 hover:scale-105 active:scale-95"
+              aria-label={`${days} days together. Press for a shower of hearts.`}
+              title="Tap for hearts"
+            >
+              <span id="days-counter" className="font-display text-7xl sm:text-8xl tabular-nums mt-1 block">{days}</span>
+            </button>
             <span className="text-lg">days together</span>
             {!couple?.anniversaryDate && (
               <button
@@ -261,21 +299,37 @@ const Home: React.FC = () => {
           <AnniversaryDialog isOpen={dateDialogOpen} onClose={() => setDateDialogOpen(false)} />
         </section>
 
-        {/* Say hello panel */}
-        <section className="max-w-6xl mx-auto px-5 sm:px-8 pb-16 sm:pb-24">
+        {/* Pair up (before pairing) or keep building the space (after) */}
+        <Reveal className="max-w-6xl mx-auto px-5 sm:px-8 pb-16 sm:pb-24">
           <div className="grid md:grid-cols-2 rounded-[28px] sm:rounded-[40px] overflow-hidden border border-border-gray">
             <div className="section-ink p-8 sm:p-12 flex flex-col items-center justify-center text-center gap-4">
               <Letter className="w-40 sm:w-52 text-on-background" fill="var(--primary)" />
-              <h2 className="font-display text-3xl sm:text-4xl">Say hello to your partner</h2>
-              <p className="max-w-xs opacity-90">Share your invite code or pair up, then start filling your space together.</p>
+              <h2 className="font-display text-3xl sm:text-4xl">
+                {user?.coupleId ? `Keep filling your space${partner?.displayName ? ` with ${partner.displayName}` : ''}` : 'Say hello to your partner'}
+              </h2>
+              <p className="max-w-xs opacity-90">
+                {user?.coupleId
+                  ? 'A memory, a photo, a song or a date idea: every little thing you add becomes part of your story.'
+                  : 'Share your invite code or pair up, then start filling your space together.'}
+              </p>
             </div>
             <div className="p-8 sm:p-12 flex flex-col justify-center gap-4 bg-surface">
-              <button onClick={() => navigate('/pair-partner')} className="btn-orange w-full">Pair with partner</button>
-              <button onClick={() => navigate('/gallery')} className="btn-outline-blue w-full">Add to the gallery</button>
-              <button onClick={() => navigate('/recommendations')} className="btn-outline-blue w-full">Find a date idea</button>
+              {user?.coupleId ? (
+                <>
+                  <button onClick={() => navigate('/memory-stack')} className="btn-orange w-full">Add a memory</button>
+                  <button onClick={() => navigate('/gallery')} className="btn-outline-blue w-full">Add to the gallery</button>
+                  <button onClick={() => navigate('/recommendations')} className="btn-outline-blue w-full">Find a date idea</button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => navigate('/pair-partner')} className="btn-orange w-full">Pair with partner</button>
+                  <button onClick={() => navigate('/gallery')} className="btn-outline-blue w-full">Add to the gallery</button>
+                  <button onClick={() => navigate('/recommendations')} className="btn-outline-blue w-full">Find a date idea</button>
+                </>
+              )}
             </div>
           </div>
-        </section>
+        </Reveal>
       </main>
 
       <footer className="w-full border-t border-border-gray py-8">

@@ -24,9 +24,11 @@ interface NudgeState {
   inbox: Nudge[];
   composerOpen: boolean;
   replyTo: Nudge | null;
+  /** Text the composer starts with (e.g. today's question from the Home page) */
+  prefill: string | null;
   add: (n: Nudge) => void;
   remove: (id: string) => void;
-  openComposer: (replyTo?: Nudge) => void;
+  openComposer: (replyTo?: Nudge, prefill?: string) => void;
   closeComposer: () => void;
 }
 
@@ -37,6 +39,7 @@ export const useNudgeStore = create<NudgeState>((set) => ({
   inbox: load(),
   composerOpen: false,
   replyTo: null,
+  prefill: null,
   add: (n) =>
     set((s) => {
       if (s.inbox.some((x) => x.id === n.id)) return s;
@@ -50,6 +53,6 @@ export const useNudgeStore = create<NudgeState>((set) => ({
       save(inbox);
       return { inbox };
     }),
-  openComposer: (replyTo) => set({ composerOpen: true, replyTo: replyTo ?? null }),
-  closeComposer: () => set({ composerOpen: false, replyTo: null }),
+  openComposer: (replyTo, prefill) => set({ composerOpen: true, replyTo: replyTo ?? null, prefill: prefill ?? null }),
+  closeComposer: () => set({ composerOpen: false, replyTo: null, prefill: null }),
 }));

@@ -23,13 +23,14 @@ const Icon: React.FC<{ name: string; className?: string }> = ({ name, className 
 
 // ─── Composer: write a note to your partner ───────────────────────────────────
 const NudgeComposer: React.FC = () => {
-  const { composerOpen, replyTo, closeComposer, remove } = useNudgeStore();
+  const { composerOpen, replyTo, prefill, closeComposer, remove } = useNudgeStore();
   const { user, partner } = useAuthStore();
   const [text, setText] = useState('');
   const [sent, setSent] = useState(false);
 
   useEffect(() => {
-    if (composerOpen) { setText(''); setSent(false); }
+    if (composerOpen) { setText(prefill ?? ''); setSent(false); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [composerOpen]);
 
   useEffect(() => {
