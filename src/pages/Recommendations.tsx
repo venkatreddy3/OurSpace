@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Compass, Film, Heart, ImagePlus, Loader2, MapPin, Music, Plus, Search, Sparkles, X } from 'lucide-react';
 import Playlist from '../components/recommendations/Playlist.js';
 import RecCard from '../components/recommendations/RecCard.js';
+import TabDoodle from '../components/recommendations/TabDoodle.js';
 import { useIdentity } from '../components/recommendations/useIdentity.js';
 import { recsService, type RecItem } from '../services/recs.service.js';
 
@@ -227,8 +228,9 @@ const Recommendations: React.FC = () => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -15 }}
       transition={{ duration: 0.5 }}
-      className="space-y-6 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8"
+      className="@container relative space-y-6 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8"
     >
+      <TabDoodle tab={activeTab} />
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-primary/10 pb-6">
         <div>
           <h1 className="text-3xl font-bold font-serif text-on-surface flex items-center gap-2">
