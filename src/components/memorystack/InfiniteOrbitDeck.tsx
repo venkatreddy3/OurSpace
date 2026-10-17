@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Calendar, MapPin, Heart, Play, Pause, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Sparkles, Calendar, MapPin, Heart, Play, Pause, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
 import OrbitImages from './OrbitImages.js';
+import ImageLightbox from '../ui/ImageLightbox';
 import type { Memory } from '../../types/memory.js';
 import { MOOD_META } from '../../types/memory.js';
 
@@ -16,6 +17,8 @@ export const InfiniteOrbitDeck: React.FC<InfiniteOrbitDeckProps> = ({
 }) => {
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [isPaused, setIsPaused] = useState<boolean>(false);
+  /** Which photo is open in the full-size viewer (null = closed) */
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   // Map memories or use configured fallback images
   const orbitItems = useMemo(() => {
@@ -29,8 +32,23 @@ export const InfiniteOrbitDeck: React.FC<InfiniteOrbitDeckProps> = ({
   const activeMemory = activeItem?.memory;
   const mood = activeMemory ? MOOD_META[activeMemory.moodTag] : null;
 
+  const lightboxItems = useMemo(
+    () =>
+      orbitItems.map(({ src, memory }) => ({
+        src,
+        title: memory.title,
+        subtitle: [
+          new Date(memory.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+          memory.location,
+        ]
+          .filter(Boolean)
+          .join(' · '),
+      })),
+    [orbitItems]
+  );
+
   const handleItemClick = (index: number) => {
-    setSelectedIndex(index);
+    setSelectedIndex(index); // clicking a photo brings it to the front; the card below has a View button for full size
     const clickedItem = orbitItems[index % orbitItems.length];
     if (clickedItem?.memory && onSelectMemory) {
       onSelectMemory(clickedItem.memory);
@@ -120,8 +138,18 @@ export const InfiniteOrbitDeck: React.FC<InfiniteOrbitDeckProps> = ({
 
       {/* ── Drag & Navigation Instructions ── */}
       <p className="text-[11px] font-mono text-on-surface-variant/70 tracking-wider uppercase mt-4 mb-6 text-center">
-        Drag orbit sideways to spin • Tap any photo to glide to front
+        Drag orbit sideways to spin • Tap a photo to bring it forward, then press View
       </p>
+
+      <ImageLightbox
+        items={lightboxItems}
+        index={lightboxIndex}
+        onClose={() => setLightboxIndex(null)}
+        onIndexChange={(i) => {
+          setLightboxIndex(i);
+          setSelectedIndex(i);
+        }}
+      />
 
       {/* ── Selected Moment Showcase Card ── */}
       {activeMemory && (
@@ -158,8 +186,16 @@ export const InfiniteOrbitDeck: React.FC<InfiniteOrbitDeckProps> = ({
                 </h3>
               </div>
 
-              {/* Quick prev/next buttons */}
+              {/* View full size + quick prev/next buttons */}
               <div className="flex items-center gap-1.5 flex-shrink-0">
+                <button
+                  onClick={() => setLightboxIndex(selectedIndex % orbitItems.length)}
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-full bg-primary/10 border border-primary/25 text-primary text-xs font-semibold hover:bg-primary/15 hover:border-primary/50 transition-all cursor-pointer"
+                  title="View this photo full size"
+                >
+                  <Maximize2 className="w-3.5 h-3.5" />
+                  View
+                </button>
                 <button
                   onClick={handlePrev}
                   className="w-8 h-8 rounded-full flex items-center justify-center bg-surface-container-high border border-primary/15 text-on-surface hover:text-primary hover:border-primary/40 transition-all cursor-pointer"
