@@ -79,6 +79,8 @@ const Pinboard: React.FC = () => {
   const [zoomScale, setZoomScale] = useState(1.0);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  /** The note that was just added and should start with the cursor in its title */
+  const [focusPinId, setFocusPinId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
   const viewState = useRef({ pan: { x: 0, y: 0 }, zoom: 1 });
@@ -112,17 +114,19 @@ const Pinboard: React.FC = () => {
     const randomOffset = () => Math.floor(Math.random() * 80) - 40;
     const maxZ = pins.reduce((max, p) => (p.zIndex > max ? p.zIndex : max), 1);
     
-    await pinboardService.createPin({
+    // Blank title so the placeholder shows; the new note grabs the keyboard so the person can just start typing
+    const id = await pinboardService.createPin({
       coupleId,
       authorId,
       type: 'note',
-      title: 'Quick sticky',
+      title: '',
       content: '',
       color: 'pastel-yellow',
       x: 180 + randomOffset(),
       y: 120 + randomOffset(),
       zIndex: maxZ + 1,
     });
+    setFocusPinId(id);
   };
 
   const handleImageFile = (file: File, x: number, y: number) => {
@@ -343,6 +347,8 @@ const Pinboard: React.FC = () => {
                   onDragStart={handleDragStart}
                   onDrag={handleDrag}
                   onDragEnd={handleDragEnd}
+                  autoFocus={pin.id === focusPinId}
+                  onAutoFocused={() => setFocusPinId(null)}
                 />
               );
             } else {

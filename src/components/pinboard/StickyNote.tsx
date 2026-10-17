@@ -1,4 +1,4 @@
-import React, { useState, useRef, useLayoutEffect } from 'react';
+import React, { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import { PinItem, pinboardService } from '../../services/pinboard.service.js';
 import { Trash2, GripHorizontal, Palette } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -9,6 +9,9 @@ interface StickyNoteProps {
   onDragStart: (id: string) => void;
   onDrag: (id: string, x: number, y: number) => void;
   onDragEnd: (id: string, x: number, y: number) => void;
+  /** When true, the title field takes the keyboard focus (used for a note that was just added) */
+  autoFocus?: boolean;
+  onAutoFocused?: () => void;
 }
 
 const DEFAULT_W = 256;
@@ -36,6 +39,8 @@ const StickyNote: React.FC<StickyNoteProps> = ({
   onDragStart,
   onDrag,
   onDragEnd,
+  autoFocus,
+  onAutoFocused,
 }) => {
   const [title, setTitle] = useState(pin.title);
   const [content, setContent] = useState(pin.content);
@@ -44,6 +49,7 @@ const StickyNote: React.FC<StickyNoteProps> = ({
   const [cardH, setCardH] = useState(pin.height || 0); // 0 → auto height
   const cardRef = useRef<HTMLDivElement>(null);
   const editRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLInputElement>(null);
   const dragStartPos  = useRef({ mouseX: 0, mouseY: 0, cardX: 0, cardY: 0 });
   const resizeStart   = useRef({ mouseX: 0, mouseY: 0, w: DEFAULT_W, h: 0 });
 
@@ -130,6 +136,14 @@ const StickyNote: React.FC<StickyNoteProps> = ({
     if (el && document.activeElement !== el && el.innerText !== pin.content) el.innerText = pin.content;
   }, [pin.content]);
 
+  // A freshly added note asks for text straight away: cursor in the title, no click needed
+  useEffect(() => {
+    if (!autoFocus) return;
+    titleRef.current?.focus({ preventScroll: true });
+    onAutoFocused?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoFocus]);
+
   const handleBlur = () => {
     if (title !== pin.title || content !== pin.content) {
       pinboardService.updatePinContent(pin.id, title, content);
@@ -207,10 +221,18 @@ const StickyNote: React.FC<StickyNoteProps> = ({
         {/* ── Editor Body ───────────────────────────────────────────────────── */}
         <div className="flex flex-col flex-1 min-h-0 overflow-hidden" style={{ gap: Math.round(6 * scaleFactor) }}>
           <input
+            ref={titleRef}
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onBlur={handleBlur}
+            onKeyDown={(e) => {
+              // Enter moves on to the note text
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                editRef.current?.focus();
+              }
+            }}
             placeholder="Title"
             style={{ fontSize: titleSize, lineHeight: 1.15, fontFamily: HAND, fontWeight: 700 }}
             className="w-full bg-transparent border-none font-bold placeholder-current/40 focus:outline-none focus:ring-0 p-0 shrink-0"
