@@ -6,7 +6,7 @@ A private, shared space for two. Partners sign in with Google, pair with a six-c
 
 | Area | What it does |
 | --- | --- |
-| **Accounts** | Google sign-in through Firebase Auth, then a short profile (name, gender, date of birth, 16 and over) and a username and password. After that, people can sign in with Google or with their username. |
+| **Accounts** | Google sign-in through Firebase Auth, then a short profile (name, gender, date of birth, 16 and over) and a username and password. After that, people can sign in with Google or with their username, and change their password from Settings (verifying with the current password or with Google). |
 | **Pairing** | Once the profile is complete, each user gets an invite code; entering a partner's code links the two accounts into one couple. |
 | **Pinboard** | An infinite, pannable canvas of sticky notes and photo pins. Drag, resize and recolour; both partners see changes live. |
 | **Memory Stack** | A timeline of memories with photos, mood tags and likes, shown as a vertical timeline, polaroid stack or orbit deck. |
@@ -148,7 +148,6 @@ With no Firebase config, the app falls back to a local mock mode: data lives in 
 ## Roadmap
 
 - Deployment configuration (hosting for the web app and API, API URL setting for split hosting)
-- A settings screen to change your password
 - Voice notes stored outside Firestore
 - Signed Cloudinary uploads through the API
 

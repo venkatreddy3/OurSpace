@@ -16,6 +16,7 @@ import MemoryStack from './pages/MemoryStack';
 import Games from './pages/Games';
 import Recommendations from './pages/Recommendations';
 import Gallery from './pages/Gallery';
+import Settings from './pages/Settings';
 import Login from './pages/Login';
 import PairPartner from './pages/PairPartner';
 import CompleteProfile from './pages/CompleteProfile';
@@ -54,6 +55,7 @@ const App: React.FC = () => {
             <Route path="games" element={<Games />} />
             <Route path="recommendations" element={<Recommendations />} />
             <Route path="gallery" element={<Gallery />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
 
           {/* Unauthenticated/Login Routes */}

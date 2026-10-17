@@ -14,6 +14,7 @@ import {
   Compass,
   Image,
   LogOut,
+  Settings as SettingsIcon,
   Menu,
   X,
   Sun,
@@ -40,6 +41,7 @@ const SidebarNav: React.FC = () => {
     { to: '/games', label: 'Couple Games', icon: Gamepad2 },
     { to: '/recommendations', label: 'Recommendations', icon: Compass },
     { to: '/gallery', label: 'Shared Gallery', icon: Image },
+    { to: '/settings', label: 'Settings', icon: SettingsIcon },
   ];
 
   const handleLogout = async () => {
