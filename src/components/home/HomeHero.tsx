@@ -3,7 +3,6 @@ import { motion, useReducedMotion } from 'framer-motion';
 import FloatingHearts from './FloatingHearts';
 
 interface HomeHeroProps {
-  name: string;
   partnerName: string | null;
   /** Whole days together, or null when the date isn't set yet */
   days: number | null;
@@ -28,9 +27,6 @@ const GREETINGS = [
   'Hey favourite human',
 ];
 
-/** A comma after the greeting unless it already ends in punctuation ("Miss me?") */
-const withComma = (greeting: string): string => (/[?!.,]$/.test(greeting) ? greeting : `${greeting},`);
-
 const LAST_KEY = 'ourspace-last-greeting';
 
 /** A random greeting that is never the same as the one shown on the previous visit */
@@ -53,12 +49,10 @@ const pickGreeting = (): string => {
 
 /**
  * HomeHero
- * A flirty random hello with the person's name in a flowing script font, a line about the story so far,
- * over softly drifting hearts.
+ * A flirty random hello in a flowing script font, a line about the story so far, over softly drifting hearts.
  */
-const HomeHero: React.FC<HomeHeroProps> = ({ name, partnerName, days }) => {
+const HomeHero: React.FC<HomeHeroProps> = ({ partnerName, days }) => {
   const reduce = useReducedMotion();
-  const firstName = name.trim().split(/\s+/)[0] || name;
   const greeting = useMemo(pickGreeting, []);
 
   const fade = (delay: number) =>
@@ -86,9 +80,7 @@ const HomeHero: React.FC<HomeHeroProps> = ({ name, partnerName, days }) => {
         className="relative mt-6 text-6xl sm:text-8xl leading-[1.1] normal-case"
         style={{ fontFamily: "'Dancing Script', cursive", fontWeight: 600 }}
       >
-        {withComma(greeting)}
-        <br />
-        <span className="text-shimmer">{firstName}</span>
+        <span className="text-shimmer">{greeting}</span>
         <motion.span
           aria-hidden="true"
           className="inline-block ml-2 text-primary"

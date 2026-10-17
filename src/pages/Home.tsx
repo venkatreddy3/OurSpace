@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useTheme } from '../context/themeContext';
-import { SleepyCats, Letter, Squiggle } from '../components/ui/Doodles';
+import { Letter } from '../components/ui/Doodles';
 import { useNudgeStore } from '../store/nudgeStore';
 import AnniversaryDialog from '../components/dashboard/AnniversaryDialog';
 import HomeHero from '../components/home/HomeHero';
@@ -10,7 +10,6 @@ import SpaceStats from '../components/home/SpaceStats';
 import MilestoneCard from '../components/home/MilestoneCard';
 import DailyQuestion from '../components/home/DailyQuestion';
 import RecentMoments from '../components/home/RecentMoments';
-import HeartBurst from '../components/home/HeartBurst';
 import Reveal from '../components/home/Reveal';
 import { useSpaceData } from '../hooks/useSpaceData';
 
@@ -55,34 +54,13 @@ const Home: React.FC = () => {
   const [dateDialogOpen, setDateDialogOpen] = useState(false);
   const openComposer = useNudgeStore((s) => s.openComposer);
   const data = useSpaceData(user?.coupleId ?? null);
-  const [burst, setBurst] = useState(0); // bumps each time the day counter is tapped
 
-  // Days since anniversary date
-  const getDaysTogether = () => {
-    if (!couple?.anniversaryDate) return 0; // Not set yet: the counter starts at zero
-    const diffTime = Date.now() - new Date(couple.anniversaryDate).getTime();
-    if (diffTime < 0) return 0;
-    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  };
-
-  const targetDays = getDaysTogether();
-  const [days, setDays] = useState(Math.max(0, targetDays - 50));
-
-  // Count-up counter animation on mount
-  useEffect(() => {
-    let current = Math.max(0, targetDays - 50);
-    const step = () => {
-      if (current < targetDays) {
-        current += Math.ceil((targetDays - current) / 10);
-        setDays(current);
-        requestAnimationFrame(step);
-      } else {
-        setDays(targetDays);
-      }
-    };
-    const timer = setTimeout(() => requestAnimationFrame(step), 600);
-    return () => clearTimeout(timer);
-  }, [targetDays]);
+  // Whole days since the "together since" date (0 until it is set)
+  const targetDays = (() => {
+    if (!couple?.anniversaryDate) return 0;
+    const elapsed = Date.now() - new Date(couple.anniversaryDate).getTime();
+    return elapsed < 0 ? 0 : Math.floor(elapsed / (1000 * 60 * 60 * 24));
+  })();
 
   const handleLogout = async () => {
     await logout();
@@ -190,15 +168,8 @@ const Home: React.FC = () => {
       </header>
 
       <main className="w-full flex-1">
-        {/* Hero: greeting, story so far, shortcuts */}
-        <HomeHero
-          name={userName}
-          partnerName={partner?.displayName || null}
-          days={couple?.anniversaryDate ? targetDays : null}
-        />
-
-        {/* Live counts of what the two of you have added */}
-        <SpaceStats data={data} />
+        {/* Hero: a random flirty hello and the story so far */}
+        <HomeHero partnerName={partner?.displayName || null} days={couple?.anniversaryDate ? targetDays : null} />
 
         {/* Our little world (clickable hotspots) */}
         <Reveal className="max-w-6xl mx-auto px-5 sm:px-8 pb-16 sm:pb-24">
@@ -226,6 +197,9 @@ const Home: React.FC = () => {
             ))}
           </div>
         </Reveal>
+
+        {/* Live counts of what the two of you have added */}
+        <SpaceStats data={data} />
 
         {/* Something to talk about, and what is coming up */}
         <section className="max-w-6xl mx-auto px-5 sm:px-8 pb-16 sm:pb-24 grid gap-5 md:grid-cols-2">
@@ -264,39 +238,8 @@ const Home: React.FC = () => {
           </div>
         </section>
 
-        {/* Statement + counter */}
-        <section className="max-w-4xl mx-auto px-5 sm:px-8 py-16 sm:py-24 text-center">
-          <SleepyCats className="mx-auto w-48 sm:w-64" catA="#e4e4ea" catB="#f6e7c8" stripe="#c9a46a" />
-          <p className="mt-6 text-sm text-on-surface-variant">For a safe and happy home</p>
-          <h2 className="font-display text-3xl sm:text-5xl mt-3">
-            We want every day together to be full of joy.
-          </h2>
-          <Squiggle className="mx-auto mt-6 w-32 text-primary" />
-          <div className="relative mt-10 inline-flex flex-col items-center card-edge px-10 py-6">
-            <HeartBurst trigger={burst} />
-            <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Our journey</span>
-            <button
-              type="button"
-              onClick={() => setBurst((b) => b + 1)}
-              className="cursor-pointer transition-transform duration-200 hover:scale-105 active:scale-95"
-              aria-label={`${days} days together. Press for a shower of hearts.`}
-              title="Tap for hearts"
-            >
-              <span id="days-counter" className="font-display text-7xl sm:text-8xl tabular-nums mt-1 block">{days}</span>
-            </button>
-            <span className="text-lg">days together</span>
-            {!couple?.anniversaryDate && (
-              <button
-                type="button"
-                onClick={() => setDateDialogOpen(true)}
-                className="mt-3 text-sm font-medium text-primary hover:underline cursor-pointer"
-              >
-                Since when are you together?
-              </button>
-            )}
-          </div>
-          <AnniversaryDialog isOpen={dateDialogOpen} onClose={() => setDateDialogOpen(false)} />
-        </section>
+        {/* Asks (or changes) the "together since" date; opened from the milestone card */}
+        <AnniversaryDialog isOpen={dateDialogOpen} onClose={() => setDateDialogOpen(false)} />
 
         {/* Pair up (before pairing) or keep building the space (after) */}
         <Reveal className="max-w-6xl mx-auto px-5 sm:px-8 pb-16 sm:pb-24">
