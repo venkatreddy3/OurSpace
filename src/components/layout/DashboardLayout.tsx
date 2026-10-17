@@ -6,6 +6,7 @@ import SidebarNav from './SidebarNav';
 import NudgeHost from '../nudges/NudgeHost';
 import GameHost from '../games/GameHost';
 import ArcMenu from './ArcMenu';
+import AnniversaryPrompt from '../dashboard/AnniversaryPrompt';
 
 /**
  * DashboardLayout Component
@@ -54,6 +55,7 @@ const DashboardLayout: React.FC = () => {
       {/* Partner notes: sticky popups on Home, bell elsewhere, composer everywhere */}
       <NudgeHost isHome={isHome} />
       <GameHost />
+      <AnniversaryPrompt />
 
       {/* TEMP dev testing: switch whole site between me and partner */}
       {isFirebaseMocked && (

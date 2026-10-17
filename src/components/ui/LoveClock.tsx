@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '../../store/authStore.js';
+import AnniversaryDialog from '../dashboard/AnniversaryDialog';
 
 /** A single digit that rolls up and out when its value changes */
 const RollingDigit: React.FC<{ value: string }> = ({ value }) => (
@@ -46,27 +47,30 @@ const FlipTile: React.FC<{ value: string; unit: string; accent?: boolean }> = ({
 /**
  * LoveClock
  * Purpose: live, ticking "loved since" counter for the couple (sidebar card).
- * Counts from the couple's anniversary date; shows a placeholder start until one is set.
+ * Counts from the couple's "together since" date. Until one is set it shows zero and offers a button to set it.
  */
 const LoveClock: React.FC = () => {
   const { couple } = useAuthStore();
+  const [dialogOpen, setDialogOpen] = useState(false);
   const startMs = useMemo(
-    () => (couple?.anniversaryDate ? new Date(couple.anniversaryDate).getTime() : Date.now() - 842 * 86400000),
+    () => (couple?.anniversaryDate ? new Date(couple.anniversaryDate).getTime() : null),
     [couple?.anniversaryDate]
   );
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
+    if (startMs === null) return;
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [startMs]);
 
-  const elapsed = Math.max(0, Math.floor((now - startMs) / 1000));
+  const elapsed = startMs === null ? 0 : Math.max(0, Math.floor((now - startMs) / 1000));
   const pad = (n: number) => String(n).padStart(2, '0');
   const d = String(Math.floor(elapsed / 86400));
   const h = pad(Math.floor((elapsed % 86400) / 3600));
   const m = pad(Math.floor((elapsed % 3600) / 60));
   const s = pad(elapsed % 60);
-  const since = new Date(startMs).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  const since =
+    startMs === null ? null : new Date(startMs).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 
   return (
     <div
@@ -75,7 +79,24 @@ const LoveClock: React.FC = () => {
     >
       <div className="flex items-baseline justify-between mb-3">
         <span className="text-[1.7rem] leading-none text-primary whitespace-nowrap" style={{ fontFamily: "'Dancing Script', cursive", fontWeight: 600 }}>Loved since</span>
-        <span className="text-[10px] text-on-surface-variant whitespace-nowrap">{since}</span>
+        {since ? (
+          <button
+            type="button"
+            onClick={() => setDialogOpen(true)}
+            className="text-[10px] text-on-surface-variant hover:text-primary whitespace-nowrap transition-colors cursor-pointer"
+            title="Change the date"
+          >
+            {since}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setDialogOpen(true)}
+            className="text-[10px] font-semibold text-primary hover:underline whitespace-nowrap cursor-pointer"
+          >
+            Set the date
+          </button>
+        )}
       </div>
       <div className="flex gap-1.5" aria-hidden="true">
         <FlipTile value={d} unit="days" />
@@ -83,6 +104,7 @@ const LoveClock: React.FC = () => {
         <FlipTile value={m} unit="min" />
         <FlipTile value={s} unit="sec" accent />
       </div>
+      <AnniversaryDialog isOpen={dialogOpen} onClose={() => setDialogOpen(false)} />
     </div>
   );
 };

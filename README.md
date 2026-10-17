@@ -15,7 +15,7 @@ A private, shared space for two. Partners sign in with Google, pair with a six-c
 | **Recommendations** | A shared watchlist, places and general list with partner ratings. Title search uses IMDb suggestions and Wikipedia. |
 | **Playlist** | Recommend songs with a note. Song search uses the iTunes Search API; partners rate what they have heard. |
 | **Notes and games** | Short notes pop up on the partner's screen in real time, and game invites and moves are relayed over Socket.io. |
-| **Relationship clock** | A running counter since your anniversary date. |
+| **Relationship clock** | A running counter since the day you got together. It starts at zero; the couple is asked since when they are together, and either partner can change the date later in Settings. |
 
 ## Tech stack
 

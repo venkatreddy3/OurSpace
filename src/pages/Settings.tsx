@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Check, Eye, EyeOff, KeyRound, Loader2, User as UserIcon } from 'lucide-react';
 import { useAuthStore } from '../store/authStore.js';
+import AnniversaryDialog from '../components/dashboard/AnniversaryDialog';
 import { isFirebaseMocked } from '../services/firebase.js';
 import { profileService, passwordStrength, MIN_PASSWORD } from '../services/profile.service.js';
 
@@ -18,7 +19,8 @@ const inputCls =
 const labelCls = 'block text-xs font-medium text-on-surface-variant mb-1.5 text-left';
 
 const Settings: React.FC = () => {
-  const { user } = useAuthStore();
+  const { user, couple } = useAuthStore();
+  const [dateDialogOpen, setDateDialogOpen] = useState(false);
   const isMock = isFirebaseMocked || import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true';
 
   const [currentPassword, setCurrentPassword] = useState('');
@@ -92,6 +94,25 @@ const Settings: React.FC = () => {
             <dt className="text-xs text-on-surface-variant">Google email</dt>
             <dd className="text-on-surface font-medium break-all">{user?.email || '—'}</dd>
           </div>
+          {couple && (
+            <div className="sm:col-span-2">
+              <dt className="text-xs text-on-surface-variant">Together since</dt>
+              <dd className="text-on-surface font-medium flex items-center gap-3">
+                <span>
+                  {couple.anniversaryDate
+                    ? new Date(couple.anniversaryDate).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })
+                    : 'Not set yet'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setDateDialogOpen(true)}
+                  className="text-xs font-medium text-primary hover:underline cursor-pointer"
+                >
+                  {couple.anniversaryDate ? 'Change' : 'Set the date'}
+                </button>
+              </dd>
+            </div>
+          )}
         </dl>
       </section>
 
@@ -201,6 +222,7 @@ const Settings: React.FC = () => {
           </form>
         )}
       </section>
+      <AnniversaryDialog isOpen={dateDialogOpen} onClose={() => setDateDialogOpen(false)} />
     </motion.div>
   );
 };

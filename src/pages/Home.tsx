@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/authStore';
 import { useTheme } from '../context/themeContext';
 import { SleepyCats, Letter, Squiggle } from '../components/ui/Doodles';
 import { useNudgeStore } from '../store/nudgeStore';
+import AnniversaryDialog from '../components/dashboard/AnniversaryDialog';
 
 const WORLD_IMAGE =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuCfwgfABSMkDW0k9ie0Sm6873rAz8NvOxx2qya4jpS8MWO3pvOlel1wT0iu8YmbFx4ZHQQpkHqDB2tk_SLR1kk8kqLJw1-gO4Zy2tcB5h0ie36Tpny1YkFoAo-7YPNeiQNZnHatA-Ye6LLcvOuxlzJ_2RyH_iM_9Ylg5yC2WCqjCZaXkNZaX9QnUhAARUQ87g8GKtmLx7fJNxHeIgsVBpEDrv40eO-q8f7qlNpgZ6_07GDYNHFLq41W7Q';
@@ -43,11 +44,12 @@ const Home: React.FC = () => {
   const { user, couple, logout } = useAuthStore();
   const { theme, setTheme } = useTheme();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [dateDialogOpen, setDateDialogOpen] = useState(false);
   const openComposer = useNudgeStore((s) => s.openComposer);
 
   // Days since anniversary date
   const getDaysTogether = () => {
-    if (!couple?.anniversaryDate) return 842; // Mockup default fallback
+    if (!couple?.anniversaryDate) return 0; // Not set yet: the counter starts at zero
     const diffTime = Date.now() - new Date(couple.anniversaryDate).getTime();
     if (diffTime < 0) return 0;
     return Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -131,6 +133,12 @@ const Home: React.FC = () => {
                       className="w-full text-left px-4 py-2 text-xs hover:bg-surface-container-high transition-colors flex items-center gap-2"
                     >
                       <span className="material-symbols-outlined text-sm">link</span> Couple settings
+                    </button>
+                    <button
+                      onClick={() => { setProfileOpen(false); navigate('/settings'); }}
+                      className="w-full text-left px-4 py-2 text-xs hover:bg-surface-container-high transition-colors flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-sm">settings</span> Account settings
                     </button>
                     <button
                       onClick={handleLogout}
@@ -240,7 +248,17 @@ const Home: React.FC = () => {
             <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Our journey</span>
             <span id="days-counter" className="font-display text-7xl sm:text-8xl tabular-nums mt-1">{days}</span>
             <span className="text-lg">days together</span>
+            {!couple?.anniversaryDate && (
+              <button
+                type="button"
+                onClick={() => setDateDialogOpen(true)}
+                className="mt-3 text-sm font-medium text-primary hover:underline cursor-pointer"
+              >
+                Since when are you together?
+              </button>
+            )}
           </div>
+          <AnniversaryDialog isOpen={dateDialogOpen} onClose={() => setDateDialogOpen(false)} />
         </section>
 
         {/* Say hello panel */}

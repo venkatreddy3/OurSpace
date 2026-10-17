@@ -147,7 +147,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         id: 'mock-couple-123',
         partner1Id: 'dev-user-uid',
         partner2Id: 'dev-partner-uid',
-        anniversaryDate: '2025-09-01',
+        anniversaryDate: null,
         status: 'active' as const,
       },
     };
@@ -182,17 +182,41 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     let unsubscribeFirestore: (() => void) | null = null;
+    let unsubscribeCouple: (() => void) | null = null;
+    let watchedCoupleId: string | null = null;
+
+    const stopWatchingCouple = () => {
+      unsubscribeCouple?.();
+      unsubscribeCouple = null;
+      watchedCoupleId = null;
+    };
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       if (unsubscribeFirestore) {
         unsubscribeFirestore();
         unsubscribeFirestore = null;
       }
+      stopWatchingCouple();
 
       if (firebaseUser) {
         unsubscribeFirestore = onSnapshot(doc(db, 'users', firebaseUser.uid), async (userDoc) => {
           if (userDoc.exists()) {
             const userData = userDoc.data() as User;
+
+            // Keep the couple (and its "together since" date) live, so a change by either partner shows for both
+            if ((userData.coupleId ?? null) !== watchedCoupleId) {
+              stopWatchingCouple();
+              watchedCoupleId = userData.coupleId ?? null;
+              if (watchedCoupleId) {
+                unsubscribeCouple = onSnapshot(
+                  doc(db, 'couples', watchedCoupleId),
+                  (coupleDoc) => {
+                    if (coupleDoc.exists()) set({ couple: coupleDoc.data() as Couple });
+                  },
+                  (err) => console.error('Couple listener failed:', err)
+                );
+              }
+            }
 
             if (userData.coupleId) {
               try {
@@ -236,6 +260,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (unsubscribeFirestore) {
         unsubscribeFirestore();
       }
+      stopWatchingCouple();
     };
   },
 
@@ -290,7 +315,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           id: 'mock-couple-123',
           partner1Id: 'dev-user-uid',
           partner2Id: 'dev-partner-uid',
-          anniversaryDate: '2025-09-01',
+          anniversaryDate: null,
           status: 'active' as const,
         },
       };
