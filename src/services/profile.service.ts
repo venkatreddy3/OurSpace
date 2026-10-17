@@ -1,11 +1,13 @@
 import {
   EmailAuthProvider,
   linkWithCredential,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
   signInWithEmailAndPassword,
   updatePassword,
   type User as FirebaseUser,
 } from 'firebase/auth';
-import { auth } from './firebase.js';
+import { auth, googleProvider } from './firebase.js';
 import api from './api.js';
 import { getAuthToken } from './authToken.js';
 
@@ -35,6 +37,16 @@ export interface ProfileDetails {
 const usernameEmail = (username: string) => `${username}@ourspace.invalid`;
 
 const authed = async () => ({ headers: { Authorization: `Bearer ${await getAuthToken()}` } });
+
+/** Password strength 0..4 with a short label */
+export const passwordStrength = (pw: string) => {
+  let n = 0;
+  if (pw.length >= MIN_PASSWORD) n++;
+  if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) n++;
+  if (/\d/.test(pw)) n++;
+  if (/[^A-Za-z0-9]/.test(pw) || pw.length >= 14) n++;
+  return { n, label: ['Too short', 'Weak', 'Okay', 'Good', 'Strong'][pw.length < MIN_PASSWORD ? 0 : n] };
+};
 
 /** Whole years between a YYYY-MM-DD date and today, or null for an invalid date */
 export const ageFromDob = (dob: string): number | null => {
@@ -74,6 +86,11 @@ const messageFor = (err: unknown, fallback: string): string => {
       return 'Wrong username or password.';
     case 'auth/too-many-requests':
       return 'Too many attempts. Please wait a bit and try again.';
+    case 'auth/popup-closed-by-user':
+    case 'auth/cancelled-popup-request':
+      return 'Google sign-in was closed before it finished. Please try again.';
+    case 'auth/user-mismatch':
+      return 'Please verify with the same Google account you signed up with.';
     case 'auth/network-request-failed':
       return 'Network problem. Check your connection and try again.';
     default:
@@ -116,6 +133,37 @@ export const profileService = {
       return res.data.user;
     } catch (err) {
       throw new Error(apiMessage(err, 'Could not save your profile. Please try again.'));
+    }
+  },
+
+  /**
+   * Sets a new password. The person first proves it's them, either with their current password
+   * or (if they forgot it) by signing in with Google again.
+   */
+  async changePassword(newPassword: string, verifyWith: { currentPassword: string } | 'google'): Promise<void> {
+    const user: FirebaseUser | null = auth?.currentUser ?? null;
+    if (!user) throw new Error('Please sign in again.');
+    const passwordProvider = user.providerData.find((p) => p.providerId === 'password');
+    if (!passwordProvider?.email) throw new Error('This account has no username login yet.');
+
+    try {
+      if (verifyWith === 'google') {
+        await reauthenticateWithPopup(user, googleProvider);
+      } else {
+        const credential = EmailAuthProvider.credential(passwordProvider.email, verifyWith.currentPassword);
+        try {
+          await reauthenticateWithCredential(user, credential);
+        } catch (err) {
+          const code = (err as { code?: string })?.code;
+          if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/invalid-login-credentials') {
+            throw new Error('Your current password isn’t right.');
+          }
+          throw err;
+        }
+      }
+      await updatePassword(user, newPassword);
+    } catch (err) {
+      throw new Error(messageFor(err, 'Could not change your password.'));
     }
   },
 

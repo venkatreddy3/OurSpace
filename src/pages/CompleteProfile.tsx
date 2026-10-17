@@ -8,6 +8,7 @@ import {
   profileService,
   linkedUsername,
   ageFromDob,
+  passwordStrength,
   USERNAME_RE,
   MIN_AGE,
   MAX_AGE,
@@ -41,16 +42,6 @@ const ErrorBox: React.FC<{ message: string | null }> = ({ message }) =>
       {message}
     </div>
   ) : null;
-
-/** Password strength 0..4 with a short label */
-const strengthOf = (pw: string) => {
-  let n = 0;
-  if (pw.length >= 8) n++;
-  if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) n++;
-  if (/\d/.test(pw)) n++;
-  if (/[^A-Za-z0-9]/.test(pw) || pw.length >= 14) n++;
-  return { n, label: ['Too short', 'Weak', 'Okay', 'Good', 'Strong'][pw.length < MIN_PASSWORD ? 0 : n] };
-};
 
 const isoDate = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -129,7 +120,7 @@ const CompleteProfile: React.FC = () => {
     : age > MAX_AGE ? 'Please enter a valid date of birth.'
     : null;
 
-  const strength = strengthOf(password);
+  const strength = passwordStrength(password);
   const credError =
     !usernameValid ? 'Username: 3 to 20 letters, numbers, dots or underscores.'
     : usernameState === 'taken' ? 'That username is taken.'
