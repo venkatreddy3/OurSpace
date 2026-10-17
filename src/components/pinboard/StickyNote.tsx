@@ -3,6 +3,7 @@ import { PinItem, pinboardService } from '../../services/pinboard.service.js';
 import { Trash2, GripHorizontal, Palette } from 'lucide-react';
 import { clsx } from 'clsx';
 import NoteDecor, { NoteCorner, cornerSize } from './NoteDecor';
+import { NOTE_PRESETS } from './notePresets';
 
 interface StickyNoteProps {
   pin: PinItem;
@@ -18,13 +19,8 @@ const DEFAULT_W = 256;
 const MIN_W = 180;
 const MIN_H = 180;
 
-const colorPresets = [
-  // Solid pastel paper in both light and dark mode (matches the photo cards)
-  { id: 'pastel-yellow', label: 'Yellow', bg: 'bg-yellow-100 border-yellow-400 text-yellow-900', circle: 'bg-yellow-500' },
-  { id: 'neon-pink',     label: 'Pink',   bg: 'bg-pink-100 border-pink-400 text-pink-900',       circle: 'bg-pink-500' },
-  { id: 'soft-lavender', label: 'Lavender', bg: 'bg-purple-100 border-purple-400 text-purple-900', circle: 'bg-purple-500' },
-  { id: 'obsidian-glass', label: 'Obsidian', bg: 'bg-slate-100 border-slate-400 text-slate-900',  circle: 'bg-primary' },
-];
+// Solid pastel paper in both light and dark mode (matches the photo cards)
+const colorPresets = NOTE_PRESETS;
 
 /**
  * StickyNote Component
@@ -313,7 +309,7 @@ const StickyNote: React.FC<StickyNoteProps> = ({
             </button>
 
             {showColorPicker && (
-              <div className="absolute bottom-6 left-0 bg-surface-container border border-primary/10 rounded-xl p-1.5 flex gap-1 z-55 shadow-lg">
+              <div className="absolute bottom-6 left-0 bg-surface-container border border-primary/10 rounded-xl p-2 grid grid-cols-4 gap-1.5 z-55 shadow-lg">
                 {colorPresets.map((preset) => (
                   <button
                     key={preset.id}

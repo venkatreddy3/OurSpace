@@ -233,6 +233,148 @@ const MoonStars: React.FC<{ sc: number }> = ({ sc }) => {
   );
 };
 
+// ─── Mint meadow: clover patch and ladybug ───────────────────────────────────
+const CloverLeaf: React.FC<GProps & { fill?: string }> = ({ fill = '#7CCB8E', ...p }) => (
+  <g transform={at(p)}>
+    {[0, 120, 240].map((r) => (
+      <path key={r} transform={`rotate(${r})`} d="M0 0 C-5 -3 -7 -9 -3 -10 C-1.5 -10.5 0 -9 0 -7.5 C0 -9 1.5 -10.5 3 -10 C7 -9 5 -3 0 0Z" fill={fill} {...line} />
+    ))}
+    <circle r="1" fill="#fff" opacity="0.7" />
+  </g>
+);
+
+const CloverPatch: React.FC<{ sc: number; inline?: boolean }> = ({ sc, inline }) => (
+  <Svg w={72} h={72} sc={sc} className="left-1 bottom-1" inline={inline}>
+    <Stem d="M8 68 C10 52 14 40 20 28" />
+    <Stem d="M8 68 C20 60 30 52 42 46" />
+    <Stem d="M8 68 C22 68 38 64 52 58" />
+    <LeafG x={10} y={58} r={-60} fill="#8BC79A" len={11} />
+    <LeafG x={20} y={64} r={-14} fill="#74B887" len={12} />
+    <CloverLeaf x={20} y={25} s={1.25} />
+    <CloverLeaf x={44} y={43} s={1} fill="#9BD9A7" />
+    <CloverLeaf x={55} y={56} s={0.8} fill="#6FC283" />
+    <BlossomG x={32} y={30} s={0.5} r={10} petal="#FFFFFF" deep="#C9D8CE" />
+  </Svg>
+);
+
+const Ladybug: React.FC<{ sc: number }> = ({ sc }) => (
+  <Svg w={42} h={38} sc={sc} className="right-1 top-1" style={{ transform: 'rotate(-8deg)' }}>
+    <Trail d="M3 32 C10 30 14 24 20 23" />
+    <ellipse cx="28" cy="22" rx="10" ry="9" fill="#E8453C" {...line} />
+    <path d="M28 13 V31" stroke={INK} strokeWidth="1.2" />
+    <circle cx="23" cy="19" r="1.7" fill={INK} />
+    <circle cx="33" cy="19" r="1.7" fill={INK} />
+    <circle cx="24" cy="26" r="1.5" fill={INK} />
+    <circle cx="32" cy="26" r="1.5" fill={INK} />
+    <circle cx="28" cy="12" r="4.2" fill={INK} />
+    <path d="M26 8.5 C25 5 23 4 21.5 4.5 M30 8.5 C31 5 33 4 34.5 4.5" fill="none" stroke={INK} strokeWidth="0.9" strokeLinecap="round" />
+  </Svg>
+);
+
+// ─── Peach sunset: poppies and a smiling sun ─────────────────────────────────
+const PoppyG: React.FC<GProps & { petal?: string; deep?: string }> = ({ petal = '#FF8A4C', deep = '#E8602A', ...p }) => (
+  <g transform={at(p)}>
+    {[0, 90, 180, 270].map((r) => (
+      <ellipse key={r} cx="0" cy="-5.5" rx="5.2" ry="6.2" transform={`rotate(${r + 20})`} fill={petal} {...line} />
+    ))}
+    {[0, 90, 180, 270].map((r) => (
+      <path key={`v${r}`} d="M0 -2 V-9" transform={`rotate(${r + 20})`} stroke={deep} strokeWidth="0.6" opacity="0.7" />
+    ))}
+    <circle r="3" fill="#3A2A2A" {...line} />
+    {Array.from({ length: 8 }).map((_, i) => (
+      <circle key={i} cx={Math.cos((i * Math.PI) / 4) * 4.2} cy={Math.sin((i * Math.PI) / 4) * 4.2} r="0.7" fill="#3A2A2A" />
+    ))}
+  </g>
+);
+
+const Poppies: React.FC<{ sc: number; inline?: boolean }> = ({ sc, inline }) => (
+  <Svg w={74} h={74} sc={sc} className="left-1 bottom-1" inline={inline}>
+    <Stem d="M8 70 C10 54 12 40 18 26" />
+    <Stem d="M8 70 C20 58 30 50 42 40" />
+    <Stem d="M8 70 C24 68 40 62 56 54" />
+    <LeafG x={11} y={58} r={-60} fill="#8BC79A" len={13} />
+    <LeafG x={16} y={64} r={-14} fill="#74B887" len={13} />
+    <LeafG x={30} y={62} r={-24} fill="#8BC79A" len={12} />
+    <PoppyG x={18} y={23} s={1.1} r={8} />
+    <PoppyG x={43} y={37} s={0.85} r={-14} petal="#FFB347" deep="#E8861A" />
+    <PoppyG x={58} y={51} s={0.62} r={20} petal="#FF6B4A" deep="#D9482A" />
+  </Svg>
+);
+
+const SunnySun: React.FC<{ sc: number }> = ({ sc }) => (
+  <Svg w={46} h={46} sc={sc} className="right-1 top-1" style={{ transform: 'rotate(6deg)' }}>
+    {Array.from({ length: 10 }).map((_, i) => (
+      <path key={i} d="M23 3.5 L25.4 9.5 L20.6 9.5Z" transform={`rotate(${i * 36} 23 23)`} fill="#FFB020" {...line} />
+    ))}
+    <circle cx="23" cy="23" r="10.5" fill="#FFD23F" {...line} />
+    <circle cx="19.5" cy="21" r="1.1" fill={INK} />
+    <circle cx="26.5" cy="21" r="1.1" fill={INK} />
+    <path d="M18.5 25.5 C21 29 25 29 27.5 25.5" fill="none" stroke={INK} strokeWidth="1" strokeLinecap="round" />
+    <circle cx="16.5" cy="25" r="1.7" fill="#FF9F80" opacity="0.6" />
+    <circle cx="29.5" cy="25" r="1.7" fill="#FF9F80" opacity="0.6" />
+  </Svg>
+);
+
+// ─── Sky breeze: forget-me-nots and a rain cloud ─────────────────────────────
+const ForgetMeNotG: React.FC<GProps & { petal?: string; center?: string }> = ({ petal = '#8EC2FF', center = '#FFD23F', ...p }) => (
+  <g transform={at(p)}>
+    {[0, 72, 144, 216, 288].map((r) => (
+      <circle key={r} cx="0" cy="-5.2" r="4.4" transform={`rotate(${r})`} fill={petal} {...line} />
+    ))}
+    <circle r="2.4" fill={center} {...line} />
+  </g>
+);
+
+const ForgetMeNots: React.FC<{ sc: number; inline?: boolean }> = ({ sc, inline }) => (
+  <Svg w={76} h={72} sc={sc} className="left-1 bottom-1" inline={inline}>
+    <Stem d="M8 68 C12 52 14 38 16 24" />
+    <Stem d="M8 68 C22 60 32 48 40 36" />
+    <Stem d="M8 68 C26 66 44 60 58 50" />
+    <Stem d="M40 36 C48 30 56 28 64 20" />
+    <LeafG x={10} y={58} r={-62} fill="#8BC79A" len={12} />
+    <LeafG x={18} y={64} r={-14} fill="#74B887" len={13} />
+    <LeafG x={32} y={60} r={-26} fill="#8BC79A" len={11} />
+    <ForgetMeNotG x={16} y={21} s={1.05} r={6} />
+    <ForgetMeNotG x={40} y={33} s={0.85} r={-12} petal="#B7D8FF" />
+    <ForgetMeNotG x={58} y={47} s={0.7} r={18} petal="#7FB4F7" />
+    <ForgetMeNotG x={65} y={18} s={0.55} r={0} petal="#B7D8FF" />
+  </Svg>
+);
+
+const RainCloud: React.FC<{ sc: number }> = ({ sc }) => (
+  <Svg w={54} h={40} sc={sc} className="right-1 top-1" style={{ transform: 'rotate(-6deg)' }}>
+    <path d="M12 27 C3 27 2 15 11 14 C12 5 26 3 29 12 C37 7 47 13 44 21 C50 23 49 27 42 27Z" fill="#FFFFFF" {...line} />
+    <circle cx="22" cy="20" r="1" fill={INK} />
+    <circle cx="32" cy="20" r="1" fill={INK} />
+    <path d="M24 23 C26 25 29 25 30 23" fill="none" stroke={INK} strokeWidth="0.9" strokeLinecap="round" />
+    <path d="M16 31 l-1.5 5 M26 31 l-1.5 5 M36 31 l-1.5 5" stroke="#7DB5F5" strokeWidth="1.7" strokeLinecap="round" />
+  </Svg>
+);
+
+// ─── Cherry berry: cherries and a heart balloon ──────────────────────────────
+const CherryBranch: React.FC<{ sc: number; inline?: boolean }> = ({ sc, inline }) => (
+  <Svg w={76} h={74} sc={sc} className="left-1 bottom-1" inline={inline}>
+    <path d="M46 8 C42 24 32 36 22 54" fill="none" stroke="#5E8F4A" strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M46 8 C52 26 58 38 58 52" fill="none" stroke="#5E8F4A" strokeWidth="1.5" strokeLinecap="round" />
+    <LeafG x={46} y={9} r={-150} fill="#8BC79A" len={15} />
+    <LeafG x={46} y={9} r={-30} fill="#74B887" len={14} />
+    <circle cx="21" cy="60" r="10" fill="#E0323F" {...line} />
+    <circle cx="58" cy="58" r="9" fill="#C8232F" {...line} />
+    <path d="M15 56 C16 53 18 52 20 52" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" opacity="0.8" />
+    <path d="M53 54 C54 52 56 51 57.5 51" fill="none" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" opacity="0.8" />
+  </Svg>
+);
+
+const HeartBalloon: React.FC<{ sc: number }> = ({ sc }) => (
+  <Svg w={40} h={50} sc={sc} className="right-1 top-1" style={{ transform: 'rotate(8deg)' }}>
+    <path d="M20 40 C12 34 14 28 12 24" fill="none" stroke={INK} strokeWidth="0.9" strokeLinecap="round" opacity="0.7" />
+    <path d="M20 32 C6 22 3 12 10 7 C15 3.5 19 7 20 10 C21 7 25 3.5 30 7 C37 12 34 22 20 32Z" fill="#FF5A6E" {...line} />
+    <path d="M10 11 C11 8.5 13.5 8 15.5 9" fill="none" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" opacity="0.8" />
+    <path d="M18 33 L22 33 L20 36Z" fill="#E03A50" {...line} />
+    <path d="M20 36 C18 41 22 44 20 48" fill="none" stroke={INK} strokeWidth="0.9" strokeLinecap="round" />
+  </Svg>
+);
+
 // ─── Tape and pins ───────────────────────────────────────────────────────────
 const Pin: React.FC<{ color: string; sc: number }> = ({ color, sc }) => (
   <svg
@@ -300,6 +442,34 @@ const NoteDecor: React.FC<{ presetId: string; scale: number }> = ({ presetId, sc
           <MoonStars sc={sc} />
         </>
       );
+    case 'mint-meadow':
+      return (
+        <>
+          <Pin color="#2FA37A" sc={sc} />
+          <Ladybug sc={sc} />
+        </>
+      );
+    case 'peach-sunset':
+      return (
+        <>
+          <Tape color="#F7B26B" kind="dots" sc={sc} className="top-1.5 left-1/2" style={{ transform: 'translateX(-50%) rotate(2deg)' }} />
+          <SunnySun sc={sc} />
+        </>
+      );
+    case 'sky-breeze':
+      return (
+        <>
+          <Pin color="#4F86D9" sc={sc} />
+          <RainCloud sc={sc} />
+        </>
+      );
+    case 'cherry-berry':
+      return (
+        <>
+          <Tape color="#F29AA1" kind="stripes" sc={sc} className="top-1.5 left-1/2" style={{ transform: 'translateX(-50%) rotate(3deg)' }} />
+          <HeartBalloon sc={sc} />
+        </>
+      );
     default: // pastel-yellow
       return (
         <>
@@ -317,6 +487,9 @@ export const cornerSize = (presetId: string, scale: number) => {
     'neon-pink': [80, 72],
     'soft-lavender': [70, 72],
     'obsidian-glass': [78, 74],
+    'mint-meadow': [72, 72],
+    'sky-breeze': [76, 72],
+    'cherry-berry': [76, 74],
   };
   const [w, h] = dims[presetId] || [74, 74];
   return { w: Math.round(w * sc), h: Math.round(h * sc) };
@@ -329,6 +502,10 @@ export const NoteCorner: React.FC<{ presetId: string; scale: number }> = ({ pres
     case 'neon-pink': return <BlossomBranch sc={sc} inline />;
     case 'soft-lavender': return <Lavender sc={sc} inline />;
     case 'obsidian-glass': return <Vine sc={sc} inline />;
+    case 'mint-meadow': return <CloverPatch sc={sc} inline />;
+    case 'peach-sunset': return <Poppies sc={sc} inline />;
+    case 'sky-breeze': return <ForgetMeNots sc={sc} inline />;
+    case 'cherry-berry': return <CherryBranch sc={sc} inline />;
     default: return <DaisyBouquet sc={sc} inline />;
   }
 };

@@ -15,7 +15,7 @@ const Gallery: React.FC = () => {
   const coupleId = user?.coupleId || 'mock-couple-123';
   const authorId = user?.uid || 'dev-user-uid';
 
-  const [activeLayout, setActiveLayout] = useState<LayoutMode>('square');
+  const [activeLayout, setActiveLayout] = useState<LayoutMode>('masonry');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isPhoneOpen, setIsPhoneOpen] = useState(false);
   const [isViewDropdownOpen, setIsViewDropdownOpen] = useState(false);

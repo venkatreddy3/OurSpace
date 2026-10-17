@@ -9,6 +9,8 @@ import DotField from '../components/ui/DotField';
 import InfiniteCanvas from '../components/pinboard/InfiniteCanvas';
 import StickyNote from '../components/pinboard/StickyNote';
 import PhotoPin from '../components/pinboard/PhotoPin';
+import { NOTE_PRESET_IDS, pickFreshDesign } from '../components/pinboard/notePresets';
+import { PHOTO_THEME_IDS } from '../components/pinboard/PhotoDecor';
 import { Plus, Camera, RefreshCw } from 'lucide-react';
 
 /**
@@ -81,6 +83,9 @@ const Pinboard: React.FC = () => {
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   /** The note that was just added and should start with the cursor in its title */
   const [focusPinId, setFocusPinId] = useState<string | null>(null);
+  // The design given to the previous new note / photo, so the next one always looks different
+  const lastNoteDesign = useRef<string | null>(null);
+  const lastPhotoDesign = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
   const viewState = useRef({ pan: { x: 0, y: 0 }, zoom: 1 });
@@ -114,6 +119,14 @@ const Pinboard: React.FC = () => {
     const randomOffset = () => Math.floor(Math.random() * 80) - 40;
     const maxZ = pins.reduce((max, p) => (p.zIndex > max ? p.zIndex : max), 1);
     
+    // Every new note gets a different colour and illustration set (least-used first, never the same twice in a row)
+    const design = pickFreshDesign(
+      NOTE_PRESET_IDS,
+      pins.filter((p) => p.type === 'note').map((p) => p.color),
+      lastNoteDesign.current
+    );
+    lastNoteDesign.current = design;
+
     // Blank title so the placeholder shows; the new note grabs the keyboard so the person can just start typing
     const id = await pinboardService.createPin({
       coupleId,
@@ -121,7 +134,7 @@ const Pinboard: React.FC = () => {
       type: 'note',
       title: '',
       content: '',
-      color: 'pastel-yellow',
+      color: design,
       x: 180 + randomOffset(),
       y: 120 + randomOffset(),
       zIndex: maxZ + 1,
@@ -132,6 +145,13 @@ const Pinboard: React.FC = () => {
   const handleImageFile = (file: File, x: number, y: number) => {
     const maxZ = pins.reduce((max, p) => (p.zIndex > max ? p.zIndex : max), 1);
     const isMock = isFirebaseMocked || import.meta.env.VITE_ENABLE_MOCK_AUTH === 'true';
+    // Each new photo gets its own card design as well (colours, tape and little doodles)
+    const design = pickFreshDesign(
+      PHOTO_THEME_IDS,
+      pins.filter((p) => p.type === 'photo').map((p) => p.color),
+      lastPhotoDesign.current
+    );
+    lastPhotoDesign.current = design;
     const reader = new FileReader();
     reader.onload = async () => {
       try {
@@ -145,7 +165,7 @@ const Pinboard: React.FC = () => {
           title: file.name,
           content: 'Caption this memory ✨',
           photoUrl,
-          color: 'obsidian-glass',
+          color: design,
           x,
           y,
           zIndex: maxZ + 1,

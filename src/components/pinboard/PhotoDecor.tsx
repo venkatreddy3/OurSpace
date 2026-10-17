@@ -9,9 +9,10 @@ import React from 'react';
 const INK = '#2A2330';
 const line = { stroke: INK, strokeWidth: 1.2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
 
-export type DoodleKind = 'heart' | 'star' | 'sparkle' | 'flower' | 'leaf' | 'cloud' | 'swirl';
+export type DoodleKind = 'heart' | 'star' | 'sparkle' | 'flower' | 'leaf' | 'cloud' | 'swirl' | 'sun' | 'moon' | 'cherry' | 'bubble';
 
 export interface PhotoTheme {
+  id: string;
   paper: string;
   accent: string;
   soft: string;
@@ -23,12 +24,19 @@ export interface PhotoTheme {
 }
 
 const THEMES: PhotoTheme[] = [
-  { paper: '#FFF4F7', accent: '#E0457B', soft: '#FFC2D8', tape: '#F9B8CE', tapeKind: 'dots', left: 'heart', right: 'sparkle', sticker: 'heart' },
-  { paper: '#FFFAE8', accent: '#D99A00', soft: '#FFE08A', tape: '#F2D27A', tapeKind: 'stripes', left: 'star', right: 'swirl', sticker: 'star' },
-  { paper: '#F2F7FF', accent: '#4F7FC4', soft: '#BBD3F5', tape: '#A9C4EE', tapeKind: 'stripes', left: 'cloud', right: 'star', sticker: 'cloud' },
-  { paper: '#F2FBF4', accent: '#3E9A5F', soft: '#BFE5CB', tape: '#A8D9B6', tapeKind: 'dots', left: 'leaf', right: 'flower', sticker: 'flower' },
-  { paper: '#F8F3FF', accent: '#8B62C9', soft: '#D8C4F5', tape: '#CDB6F0', tapeKind: 'plain', left: 'sparkle', right: 'heart', sticker: 'sparkle' },
+  { id: 'rose',     paper: '#FFF4F7', accent: '#E0457B', soft: '#FFC2D8', tape: '#F9B8CE', tapeKind: 'dots',    left: 'heart',   right: 'sparkle', sticker: 'heart' },
+  { id: 'honey',    paper: '#FFFAE8', accent: '#D99A00', soft: '#FFE08A', tape: '#F2D27A', tapeKind: 'stripes', left: 'star',    right: 'swirl',   sticker: 'star' },
+  { id: 'cloud',    paper: '#F2F7FF', accent: '#4F7FC4', soft: '#BBD3F5', tape: '#A9C4EE', tapeKind: 'stripes', left: 'cloud',   right: 'star',    sticker: 'cloud' },
+  { id: 'garden',   paper: '#F2FBF4', accent: '#3E9A5F', soft: '#BFE5CB', tape: '#A8D9B6', tapeKind: 'dots',    left: 'leaf',    right: 'flower',  sticker: 'flower' },
+  { id: 'violet',   paper: '#F8F3FF', accent: '#8B62C9', soft: '#D8C4F5', tape: '#CDB6F0', tapeKind: 'plain',   left: 'sparkle', right: 'heart',   sticker: 'sparkle' },
+  { id: 'peach',    paper: '#FFF3EA', accent: '#E8743B', soft: '#FFCFA8', tape: '#FFBE8F', tapeKind: 'stripes', left: 'sun',     right: 'flower',  sticker: 'sun' },
+  { id: 'lagoon',   paper: '#EFFBF9', accent: '#1F9E96', soft: '#A6E3DD', tape: '#8FD8D1', tapeKind: 'dots',    left: 'bubble',  right: 'leaf',    sticker: 'bubble' },
+  { id: 'cherry',   paper: '#FFF1F1', accent: '#C8323C', soft: '#F7B0B5', tape: '#F29AA1', tapeKind: 'plain',   left: 'cherry',  right: 'heart',   sticker: 'cherry' },
+  { id: 'twilight', paper: '#F1F1FB', accent: '#4B4FA8', soft: '#C5C8F0', tape: '#AEB2E6', tapeKind: 'stripes', left: 'moon',    right: 'star',    sticker: 'moon' },
 ];
+
+/** Ids of every photo design, in the order they are offered */
+export const PHOTO_THEME_IDS = THEMES.map((t) => t.id);
 
 const hash = (s: string): number => {
   let h = 0;
@@ -36,7 +44,9 @@ const hash = (s: string): number => {
   return h;
 };
 
-export const photoTheme = (id: string): PhotoTheme => THEMES[hash(id) % THEMES.length];
+/** A photo uses the design saved on it (`themeKey`); older photos without one fall back to a design picked from their id */
+export const photoTheme = (id: string, themeKey?: string): PhotoTheme =>
+  THEMES.find((t) => t.id === themeKey) ?? THEMES[hash(id) % THEMES.length];
 /** Small tilt (degrees) so photos look casually pinned: between -2.2 and 2.2 */
 export const photoTilt = (id: string): number => ((hash(id + 't') % 45) - 22) / 10;
 
@@ -79,6 +89,40 @@ const Doodle: React.FC<{ kind: DoodleKind; color: string; soft: string; size: nu
         );
       case 'cloud':
         return <path d="M6 18 C2 18 1.5 12 6.5 11.5 C7 6.5 15 5.5 16.5 10.5 C21.5 10 22.5 18 18 18Z" fill={soft} {...line} />;
+      case 'sun':
+        return (
+          <>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <path key={i} d="M12 2.5 V5.4" transform={`rotate(${i * 45} 12 12)`} fill="none" {...line} />
+            ))}
+            <circle cx="12" cy="12" r="5" fill={soft} {...line} />
+          </>
+        );
+      case 'moon':
+        return (
+          <>
+            <path d="M15 3 A9.5 9.5 0 1 0 21 15.5 A7.5 7.5 0 0 1 15 3Z" fill={soft} {...line} />
+            <circle cx="19" cy="6" r="1.1" fill={color} />
+          </>
+        );
+      case 'cherry':
+        return (
+          <>
+            <path d="M8 17 C8 11 11 7 15 4 M16 18 C16 12 15.5 8 15 4" fill="none" {...line} />
+            <circle cx="8" cy="18" r="3.4" fill={soft} {...line} />
+            <circle cx="16" cy="19" r="3.4" fill={soft} {...line} />
+            <path d="M15 4 C18 3 20 4.5 21 6.5" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+          </>
+        );
+      case 'bubble':
+        return (
+          <>
+            <circle cx="9" cy="14" r="5.5" fill={soft} {...line} />
+            <circle cx="17" cy="8" r="3.4" fill={soft} {...line} />
+            <circle cx="18" cy="17.5" r="2.2" fill={soft} {...line} />
+            <path d="M6.6 12 C7.2 10.8 8.1 10.2 9.1 10.2" fill="none" stroke="#fff" strokeWidth="1.3" strokeLinecap="round" />
+          </>
+        );
       default:
         return <path d="M3 17 C5 6 12 6 11 12 C10 17 5 15 7 11 C9 7 16 8 17 14 C18 19 21 19 22 15" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" />;
     }

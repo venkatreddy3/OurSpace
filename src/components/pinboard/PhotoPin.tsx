@@ -41,7 +41,7 @@ const PhotoPin: React.FC<PhotoPinProps> = ({
   const metaSize     = `${Math.max(9,  Math.round(11 * scaleFactor))}px`;
   const iconSize     = Math.max(12, Math.round(14 * scaleFactor));
   const padding      = Math.max(10, Math.round(12 * scaleFactor));
-  const theme        = photoTheme(pin.id);
+  const theme        = photoTheme(pin.id, pin.color);
   const tilt         = photoTilt(pin.id);
   const HAND         = "'Caveat', 'Dancing Script', cursive";
 
