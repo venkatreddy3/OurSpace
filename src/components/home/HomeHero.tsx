@@ -1,7 +1,5 @@
 import React, { useMemo } from 'react';
-import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
-import { BookHeart, Camera, Mail, Pin } from 'lucide-react';
 import FloatingHearts from './FloatingHearts';
 
 interface HomeHeroProps {
@@ -9,32 +7,59 @@ interface HomeHeroProps {
   partnerName: string | null;
   /** Whole days together, or null when the date isn't set yet */
   days: number | null;
-  onSendNote: () => void;
 }
 
-const greetingFor = (hour: number): string => {
-  if (hour < 5) return 'Still up';
-  if (hour < 12) return 'Good morning';
-  if (hour < 17) return 'Good afternoon';
-  if (hour < 22) return 'Good evening';
-  return 'Sweet dreams';
-};
+/** Playful hellos, one picked at random each visit (kept free of anything gendered) */
+const GREETINGS = [
+  'Hiee bbg',
+  'Heyy cutie',
+  'Hi gorgeous',
+  'Well hello there',
+  'Miss me?',
+  'Hey you',
+  'Hi my love',
+  'Hiii sunshine',
+  'Look who’s here',
+  'There you are',
+  'Hey babe',
+  'Hi darling',
+  'Oh hi, trouble',
+  'Hey stunner',
+  'Hey favourite human',
+];
 
-const actions = [
-  { to: '/memory-stack', label: 'Add a memory', icon: BookHeart },
-  { to: '/pinboard', label: 'Pin a note', icon: Pin },
-  { to: '/gallery', label: 'Add photos', icon: Camera },
-] as const;
+/** A comma after the greeting unless it already ends in punctuation ("Miss me?") */
+const withComma = (greeting: string): string => (/[?!.,]$/.test(greeting) ? greeting : `${greeting},`);
+
+const LAST_KEY = 'ourspace-last-greeting';
+
+/** A random greeting that is never the same as the one shown on the previous visit */
+const pickGreeting = (): string => {
+  let last = -1;
+  try {
+    last = Number(sessionStorage.getItem(LAST_KEY) ?? -1);
+  } catch {
+    /* storage unavailable: repeats are fine */
+  }
+  let index = Math.floor(Math.random() * GREETINGS.length);
+  if (index === last) index = (index + 1) % GREETINGS.length;
+  try {
+    sessionStorage.setItem(LAST_KEY, String(index));
+  } catch {
+    /* ignore */
+  }
+  return GREETINGS[index];
+};
 
 /**
  * HomeHero
- * Time-of-day greeting with the couple's names, a line about the story so far, and the everyday shortcuts,
+ * A flirty random hello with the person's name in a flowing script font, a line about the story so far,
  * over softly drifting hearts.
  */
-const HomeHero: React.FC<HomeHeroProps> = ({ name, partnerName, days, onSendNote }) => {
+const HomeHero: React.FC<HomeHeroProps> = ({ name, partnerName, days }) => {
   const reduce = useReducedMotion();
   const firstName = name.trim().split(/\s+/)[0] || name;
-  const greeting = useMemo(() => greetingFor(new Date().getHours()), []);
+  const greeting = useMemo(pickGreeting, []);
 
   const fade = (delay: number) =>
     reduce
@@ -56,8 +81,12 @@ const HomeHero: React.FC<HomeHeroProps> = ({ name, partnerName, days, onSendNote
         {partnerName ? `Connected with ${partnerName}` : 'Waiting for your partner to join'}
       </motion.span>
 
-      <motion.h1 {...fade(0.1)} className="relative font-display text-5xl sm:text-7xl mt-6 leading-[1.05]">
-        {greeting},
+      <motion.h1
+        {...fade(0.1)}
+        className="relative mt-6 text-6xl sm:text-8xl leading-[1.1] normal-case"
+        style={{ fontFamily: "'Dancing Script', cursive", fontWeight: 600 }}
+      >
+        {withComma(greeting)}
         <br />
         <span className="text-shimmer">{firstName}</span>
         <motion.span
@@ -77,27 +106,6 @@ const HomeHero: React.FC<HomeHeroProps> = ({ name, partnerName, days, onSendNote
             ? `Day ${days + 1} of you and ${partnerName}. Make it a good one.`
             : `Day ${days + 1} of your story.`}
       </motion.p>
-
-      <motion.div {...fade(0.4)} className="relative mt-8 flex flex-wrap items-center justify-center gap-3">
-        {actions.map(({ to, label, icon: Icon }) => (
-          <Link
-            key={to}
-            to={to}
-            className="group inline-flex items-center gap-2 rounded-full border border-border-gray bg-surface px-5 py-2.5 text-sm font-medium transition-all duration-300 hover:-translate-y-0.5 hover:border-primary hover:text-primary hover:shadow-lg"
-          >
-            <Icon className="h-4 w-4 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6" />
-            {label}
-          </Link>
-        ))}
-        <button
-          type="button"
-          onClick={onSendNote}
-          className="group inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-on-primary transition-all duration-300 hover:-translate-y-0.5 hover:brightness-105 hover:shadow-lg cursor-pointer"
-        >
-          <Mail className="h-4 w-4 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6" />
-          Send a note
-        </button>
-      </motion.div>
     </section>
   );
 };

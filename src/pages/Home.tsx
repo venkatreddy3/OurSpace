@@ -195,7 +195,6 @@ const Home: React.FC = () => {
           name={userName}
           partnerName={partner?.displayName || null}
           days={couple?.anniversaryDate ? targetDays : null}
-          onSendNote={() => openComposer()}
         />
 
         {/* Live counts of what the two of you have added */}
