@@ -129,11 +129,11 @@ const Doodles: React.FC<{ color: string; variant: number }> = ({ color, variant 
   const c = {
     fill: 'none',
     stroke: color,
-    strokeWidth: 1.5,
+    strokeWidth: 1.9,
     strokeLinecap: 'round' as const,
     strokeLinejoin: 'round' as const,
   };
-  const dot = (x: number, y: number, r = 1.6) => <circle key={`${x}-${y}`} cx={x} cy={y} r={r} fill={color} />;
+  const dot = (x: number, y: number, r = 1.9) => <circle key={`${x}-${y}`} cx={x} cy={y} r={r} fill={color} />;
 
   const sets = [
     // love: heart, star, sparkles, music note
@@ -196,10 +196,10 @@ const Doodles: React.FC<{ color: string; variant: number }> = ({ color, variant 
   const v = variant % 3;
   return (
     <>
-      <svg aria-hidden viewBox="0 0 190 130" className="pointer-events-none absolute top-1 left-0 w-full" style={{ opacity: 0.6 }}>
+      <svg aria-hidden viewBox="0 0 190 130" className="pointer-events-none absolute top-1 left-0 w-full" style={{ opacity: 0.85 }}>
         {sets[v]}
       </svg>
-      <svg aria-hidden viewBox="0 0 32 32" className="pointer-events-none absolute right-3 bottom-[3.4rem] w-8 h-8" style={{ opacity: 0.6 }}>
+      <svg aria-hidden viewBox="0 0 32 32" className="pointer-events-none absolute right-3 bottom-[3.4rem] w-8 h-8" style={{ opacity: 0.85 }}>
         {bottoms[v]}
       </svg>
     </>
