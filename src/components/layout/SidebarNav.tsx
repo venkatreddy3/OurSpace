@@ -83,7 +83,18 @@ const SidebarNav: React.FC = () => {
 
       {/* Navigation */}
       <nav className="flex flex-col gap-1" aria-label="Main">
-        <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-on-surface-variant">Menu</p>
+        <div className="flex items-center justify-between px-3 pb-1">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-on-surface-variant">Menu</p>
+          <button
+            type="button"
+            onClick={() => setTheme(isDark ? 'light' : 'dark')}
+            className="p-1 rounded-md text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors cursor-pointer"
+            title={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+            aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+          >
+            {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+          </button>
+        </div>
         {navItems.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
@@ -107,30 +118,6 @@ const SidebarNav: React.FC = () => {
       {/* Bottom group */}
       <div className="mt-auto flex flex-col gap-4">
         <LoveClock />
-
-        {/* Theme: clear two-way switch */}
-        <div role="radiogroup" aria-label="Theme" className="grid grid-cols-2 gap-1 rounded-xl bg-surface-container-high p-1">
-          {[
-            { key: 'light', label: 'Light', icon: Sun },
-            { key: 'dark', label: 'Dark', icon: Moon },
-          ].map(({ key, label, icon: Icon }) => {
-            const active = (key === 'dark') === isDark;
-            return (
-              <button
-                key={key}
-                type="button"
-                role="radio"
-                aria-checked={active}
-                onClick={() => setTheme(key as 'light' | 'dark')}
-                className={`flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition-colors cursor-pointer ${
-                  active ? 'bg-surface text-on-surface shadow-sm' : 'text-on-surface-variant hover:text-on-surface'
-                }`}
-              >
-                <Icon className="w-4 h-4" /> {label}
-              </button>
-            );
-          })}
-        </div>
 
         {/* Profile */}
         <div className="flex items-center gap-3 border-t border-sidebar-border pt-4">
